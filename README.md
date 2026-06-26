@@ -1,8 +1,4 @@
-Here is a crisp, readable, and concise version of the README tailored for your repository. It captures all the core concepts from your report without digging into the specific XOR implementation or code setup yet, keeping it clean and punchy.
 
----
-
-```markdown
 # Neural Networks & Perceptrons: Learning Report
 
 [cite_start]A concise conceptual breakdown of the foundational architectures of Artificial Neural Networks (ANNs), tracking the core principles from single-layer perceptrons to multi-layer processing[cite: 1, 2].
