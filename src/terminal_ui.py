@@ -6,8 +6,8 @@ import os
 import time
 
 
-from day3_data        import build_pipeline
-from day4_convergence import ConvergentPerceptron
+from data_pipeline import build_pipeline
+from train import ConvergentPerceptron
 
 
 # Format: \033[<code>m
