@@ -1,35 +1,66 @@
-# Neural Networks & Perceptrons: Learning Report
+# Perceptron CLI — A From-Scratch ML Tool
 
-A concise conceptual breakdown of the foundational architectures of Artificial Neural Networks (ANNs), tracking the core principles from single-layer perceptrons to multi-layer processing.
+A single-layer perceptron classifier built entirely with NumPy — no sklearn, 
+no black boxes. Train, evaluate, save/load, and predict, all through a 
+git-style CLI.
 
----
-
-## Architectural Overview
-
-### Artificial vs. Biological Neurons
-* **Biological Neuron:** Receives signals via dendrites, processes them in the cell body, and transmits outputs through the axon, learning by changing synaptic strength.
-* **Artificial Neuron:** Receives numerical inputs, multiplies them by weights, computes a weighted sum, applies an activation function, and produces an output, learning by updating those weights.
-
-### Network Layers
-* **Input Layer:** Takes in raw data (e.g., pixels, shape, color).
-* **Hidden Layer:** Learns underlying features and patterns from that data.
-* **Output Layer:** Provides the final decision or classification.
+![Confusion Matrix](assets/confusion_matrix.png)
 
 ---
 
-## Core Machine Learning Concepts
+## What it does
 
-* **Perceptron:** The simplest form of an artificial neural network. It computes a weighted sum of inputs and checks if the result crosses a threshold to make a binary decision (1 for yes, 0 for no).
-* **Decision Boundary:** The line or plane that separates classes in the dataset.
-  * **Single-Layer Perceptron (SLP):** Restricted to a straight line; can only solve linearly separable problems.
-  * **Multi-Layer Perceptron (MLP):** Utilizes hidden layers and non-linear activations to map complex or curved boundaries.
-* **Weights & Biases:** Weights determine the angle and slope of the decision boundary. The bias acts as an intercept, shifting the boundary to adjust the network's inherent tendency to fire a positive or negative decision.
-* **Activation Function (Sigmoid):** Squashes any real number into a value between 0 and 1, making it ideal for binary outputs.
-* **Partial Data Processing:** Missing values contribute zero to the weighted sum, allowing other weights to compensate via masking techniques.
+- **Perceptron implemented from scratch** — weighted sums, activation, and 
+  weight updates written manually, not via a library
+- **Manual metrics** — confusion matrix, precision, recall, and F1 computed 
+  from raw NumPy, not sklearn.metrics
+- **Model persistence** — save trained weights *and* the scaler's mean/std 
+  to disk, so predictions after reload match training-time behavior exactly
+- **Run history** — every training run logs to a timestamped file; compare 
+  hyperparameters across sessions
+- **Git-style CLI** — subcommands (`train`, `predict`, `eval`, `history`, 
+  `info`, `compare`) instead of one messy script
 
 ---
 
-## Operational Phases
+## Screenshots
 
-1. **Learning / Training:** Weights and biases are iteratively adjusted using training data to minimize error.
-2. **Recall / Inference:** The learned parameters are frozen and used to predict outputs for new, unseen inputs.
+### Confusion matrix (color-coded)
+![Confusion Matrix](assets/confusion_matrix.png)
+
+### Run history comparison
+![History](assets/history_log.png)
+
+### CLI subcommands
+![CLI Help](assets/cli_help.png)
+
+---
+
+## Quick example
+
+```bash
+python cli.py train --epochs 100 --lr 0.01
+python cli.py predict --features 5.1 3.5 1.4 0.2
+python cli.py eval --verbose
+python cli.py history
+```
+
+---
+
+## A few implementation notes
+
+- The scaler's mean/std are saved alongside the weights — reloading a model 
+  without them would silently break predictions, since `fit_transform` was 
+  only correct at training time.
+- Precision/recall/F1 are implemented manually since interviews expect you 
+  to be able to derive them, not just call a library function.
+- Currently a single-layer perceptron — linearly separable classification 
+  only (works well on Iris; wouldn't solve something like XOR without a 
+  hidden layer).
+
+---
+
+## What's next
+
+- Extend to a multi-layer perceptron for non-linearly-separable problems
+- Add unit tests for the metrics module
