@@ -1,16 +1,7 @@
-# =====================================================================
-# DAY 2-3: OPTIMISED PERCEPTRON WITH EARLY CONVERGENCE LOOP
-# =====================================================================
-# This file optimizes the baseline single-layer perceptron. 
-# Instead of running through every single epoch blindly, it implements
-# an early-stopping check: if an entire epoch passes with 0 mistakes,
-# the weights are perfectly optimized, and the loop terminates early!
-
 import numpy as np
 
 class OptimisedPerceptron:
     def __init__(self, lr=0.1, epochs=50):
-        # Initialize basic hyperparameters
         self.lr = lr                  # Learning rate handles weight adjustment step sizes
         self.epochs = epochs          # Maximum number of iterations allowed
         self.weights = None           # Weight array matching the feature count
@@ -35,29 +26,26 @@ class OptimisedPerceptron:
                 # If prediction doesn't match target, execute backprop weight corrections
                 if update != 0.0:
                     self.weights += update * xi # Update input direction array
-                    self.bias += update         # Shift threshold vector bias
+                    self.bias += update        
                     errors += 1                 # Record the mistake count
                     
-            # Track chronological optimization history trend parameters
+           
             self.errors_per_epoch.append(errors)
             
-            # EARLY CONVERGENCE CHECK: 
+          
             # If errors reach absolute zero, weights are optimal. Stop early!
             if errors == 0:
                 break
 
     def predict_single(self, xi):
-        """ Evaluates activation threshold logic for a single row index vector. """
         # Linear dot-product combination: z = w · x + b
         activation = np.dot(xi, self.weights) + self.bias
         # Step Activation Function returns 1 for positive boundaries, else 0
         return 1 if activation >= 0.0 else 0
 
     def predict(self, X):
-        """ Map step function vector operations over a full inference dataset. """
         return np.array([self.predict_single(xi) for xi in X])
 
     def accuracy(self, X, y):
-        """ Calculate standard prediction accuracy scores from zero-scratch arrays. """
         preds = self.predict(X)
         return sum(p == a for p, a in zip(preds, y)) / len(y) * 100
