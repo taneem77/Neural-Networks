@@ -2,17 +2,17 @@
 
 import numpy as np
 import importlib
-import day4
+import data_pipeline
 
 # Dynamic imports to load older configurations safely
-day1_2 = importlib.import_module("day1-2")
+day1_2 = importlib.import_module("perceptron_core")
 BasePerceptron = day1_2.Perceptron
 
-day2_3 = importlib.import_module("day2-3")
+day2_3 = importlib.import_module("optimised_perceptron")
 OptimisedPerceptron = day2_3.OptimisedPerceptron
 
 # Bring in the data pipeline from day4 cleanly
-build_pipeline = day4.build_pipeline
+build_pipeline = data_pipeline.build_pipeline
 
 
 class ConvergentPerceptron:
