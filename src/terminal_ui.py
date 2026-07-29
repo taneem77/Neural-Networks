@@ -1,9 +1,9 @@
 
 
 import numpy as np
-import sys
-import os
-import time
+import sys #this is to use usys.stdout to manipulate standard output during training and sys.exit to exit the program
+import os #for terminal specific operation like clear and get terminal size
+import time #to create delay for progress display bar
 
 
 from data_pipeline import build_pipeline
@@ -15,7 +15,7 @@ from train import ConvergentPerceptron
 #   1  = bold
 #   2  = dim
 #   9x = bright colors
-class C:
+class C:#styling terminal mein
     RESET   = "\033[0m"
     BOLD    = "\033[1m"
     DIM     = "\033[2m"
@@ -26,7 +26,7 @@ class C:
     MAGENTA = "\033[95m"
     BLUE    = "\033[94m"
     WHITE   = "\033[97m"
-
+#For styling : ANSI escape sequences. wrap them inside a small C class so I could refer to readable names like C.GREEN and C.BOLD instead of repeating raw escape codes throughout the UI.
 
 # ─── LAYOUT HELPERS ───────────────────────────────────────────────────────────
 def terminal_width():
@@ -34,11 +34,11 @@ def terminal_width():
     try:
         return os.get_terminal_size().columns
     except OSError:
-        return 80
+        return 80 #this is for fallback cases : when u cannot determine the width of temrinal in sense of number of columns wide u fallback to 80 columns wide
 
 def rule(char="─", color=C.DIM):
     """Print a full-width horizontal rule."""
-    print(f"{color}{char * terminal_width()}{C.RESET}")
+    print(f"{color}{char * terminal_width()}{C.RESET}") #this basically division of terminal using this --- acc to widht
 
 def section(title):
     """Print a section header with a rule below."""
