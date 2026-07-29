@@ -1,6 +1,3 @@
-Here is your document properly formatted as a clean **`.md`**** file (raw Markdown)** with all structure preserved and fixed:
-
-````md
 # Perceptron CLI — From-Scratch ML to Linux Kernel Inference
 
 A single-layer perceptron classifier implemented from scratch with NumPy and developed progressively from basic logic-gate experiments into a complete command-line machine learning workflow and an initial **Linux kernel-space inference prototype**.
