@@ -1,64 +1,116 @@
-# Perceptron CLI — A From-Scratch ML Tool
+Here is your document properly formatted as a clean **`.md`**** file (raw Markdown)** with all structure preserved and fixed:
 
-A single-layer perceptron classifier implemented from scratch with NumPy and
-developed progressively from basic logic-gate experiments into a complete
-command-line machine learning workflow.
+````md
+# Perceptron CLI — From-Scratch ML to Linux Kernel Inference
 
-The project supports training, evaluation, prediction, model persistence,
-experiment tracking, hyperparameter tuning, and an interactive terminal
-interface.
+A single-layer perceptron classifier implemented from scratch with NumPy and developed progressively from basic logic-gate experiments into a complete command-line machine learning workflow and an initial **Linux kernel-space inference prototype**.
 
-The core perceptron algorithm and evaluation metrics are implemented manually
-rather than using pre-built ML classifiers or `sklearn.metrics`.
+The project currently supports:
+
+- Perceptron training from scratch
+- Evaluation and manual metrics
+- Prediction
+- Model persistence
+- Experiment tracking
+- Hyperparameter tuning
+- Interactive terminal training
+- Structured CLI commands
+- Linux kernel module compilation
+- Fixed-point perceptron inference inside kernel space
+
+The core perceptron algorithm and evaluation metrics are implemented manually rather than using pre-built ML classifiers or `sklearn.metrics`.
 
 ---
 
 ## Overview
 
-The goal of this project is to understand what happens inside a perceptron
-instead of treating machine learning as a black box.
+The goal of this project is to understand what happens inside a perceptron instead of treating machine learning as a black box.
 
-The project began with a minimal implementation capable of learning simple
-logic gates and was gradually extended with convergence handling, real-world
-data preprocessing, evaluation metrics, model persistence, experiment logging,
-and a structured CLI.
+The project began with a minimal implementation capable of learning simple logic gates and was gradually extended with convergence handling, real-world data preprocessing, evaluation metrics, model persistence, experiment logging, and a structured CLI.
 
-The current classifier operates on a binary subset of the Iris dataset:
+The current ML classifier operates on a binary subset of the Iris dataset:
 
-```text
+```
 setosa vs versicolor
+```
+
+The latest stage extends the project toward **ML + systems integration** by reproducing the lightweight perceptron inference operation inside a Linux loadable kernel module written in C.
+
+The overall progression is:
+
+```
+Perceptron Fundamentals
+        ↓
+Training Improvements
+        ↓
+Iris Data Pipeline
+        ↓
+Interactive Training
+        ↓
+Evaluation & Persistence
+        ↓
+Structured CLI
+        ↓
+Linux Kernel Module
+        ↓
+Python ↔ Kernel Integration
 ```
 
 ---
 
-## Project Progress
+# Project Progress
 
-### Stage 1 — Perceptron Fundamentals
+## Stage 1 — Perceptron Fundamentals
 
-The project started with a basic perceptron implemented from scratch.
+The project started with a basic perceptron implemented from scratch using Python and NumPy.
 
 The initial model included:
 
 - Weight initialization
 - Bias handling
 - Weighted-sum calculation
-- Step activation function
+- Step activation
 - Prediction
 - Perceptron learning rule
 - Epoch-based training
 
-It was tested on simple problems including AND and OR gates.
+For an input vector:
 
-These experiments also demonstrated a fundamental limitation of a
-single-layer perceptron: it can only learn linearly separable decision
-boundaries.
+```
+x = [x1, x2, ..., xn]
+```
+
+the perceptron calculates:
+
+```
+z = w · x + b
+```
+
+and applies a binary step activation:
+
+```
+prediction = 1    if z >= 0
+prediction = 0    otherwise
+```
+
+When a sample is misclassified:
+
+```
+error = actual - predicted
+
+w = w + learning_rate × error × x
+b = b + learning_rate × error
+```
+
+The initial model was tested on simple problems including **AND and OR gates**.
+
+These experiments demonstrated an important limitation of a single-layer perceptron: it can only learn **linearly separable decision boundaries**.
 
 ---
 
-### Stage 2 — Training Improvements
+## Stage 2 — Training Improvements
 
-The initial implementation was extended to make training more stable,
-observable, and efficient.
+The initial implementation was extended to make training more stable, observable, and efficient.
 
 Added:
 
@@ -70,50 +122,82 @@ Added:
 - Confidence-scaled updates
 - Convergence monitoring
 
-Instead of blindly using the final epoch's parameters, the model can preserve
-its best-performing weights and stop training once convergence is detected.
+Instead of blindly retaining the final epoch's parameters, the model can preserve its best-performing weights and stop training once convergence is detected.
+
+### Learning Rate Decay
+
+Instead of keeping the learning rate constant:
+
+```
+current_lr = initial_lr × decay^epoch
+```
+
+This allows larger updates during the beginning of training and progressively smaller updates as the model approaches convergence.
+
+### Early Stopping
+
+Training does not necessarily need to run for every configured epoch.
+
+Example:
+
+```
+Maximum epochs: 100
+Patience: 3
+
+Perfect epoch
+Perfect epoch
+Perfect epoch
+→ Stop training
+```
+
+This avoids unnecessary computation after convergence.
 
 ---
 
-### Stage 3 — Iris Data Pipeline
+## Stage 3 — Iris Data Pipeline
 
 The model was then moved from synthetic logic-gate examples to a real dataset.
 
-The Iris dataset is filtered into a binary classification problem:
+The Iris dataset is filtered into the binary classification problem:
 
-```text
+```
 setosa vs versicolor
 ```
 
 The data pipeline includes:
 
-- 100 total samples
+- 100 samples
 - 4 numerical input features
 - Binary class filtering
 - 80/20 train-test split
 - Feature standardization
 
-The four input features are:
+The four features are:
 
-```text
+```
 sepal length (cm)
 sepal width (cm)
 petal length (cm)
 petal width (cm)
 ```
 
-Feature standardization is important for perceptron training because features
-with larger numerical ranges could otherwise dominate the weight updates.
+Feature standardization is important because features with larger numerical ranges could otherwise dominate the perceptron's weight updates.
 
-`scikit-learn` is used for dataset loading, train-test splitting, and
-preprocessing. The classifier itself is implemented from scratch.
+The transformation is:
+
+```
+x_scaled = (x - mean) / std
+```
+
+`scikit-learn` is used for dataset loading, train-test splitting, and preprocessing.
+
+The **classifier itself is implemented from scratch**.
 
 ---
 
-### Stage 4 — Interactive Training Interface
+## Stage 4 — Interactive Training Interface
 
-An interactive terminal interface was added to make the training process
-visible instead of hiding it behind a single function call.
+An interactive terminal interface was added to make the training process visible instead of hiding it behind a single function call.
 
 Run:
 
@@ -137,58 +221,62 @@ The interface displays:
 - Learning curve
 - Sample predictions
 
-After training, the model can also be retrained interactively with different
-hyperparameters.
-
-![Training Interface](assets/train.png)
+The model can also be retrained interactively using different hyperparameters.
 
 ---
 
-### Stage 5 — Structured CLI
+## Stage 5 — Structured CLI
 
-The project was reorganized into a git-style command-line interface with
-separate subcommands for different parts of the ML workflow.
+The project was reorganized into a git-style command-line interface with separate commands for the different parts of the ML workflow.
 
 ```bash
 python cli.py train
+
 python cli.py predict --features 5.1 3.5 1.4 0.2
+
 python cli.py eval --verbose
+
 python cli.py history
+
 python cli.py info
 ```
 
-This separates training, inference, evaluation, model inspection, and
-experiment tracking instead of handling everything inside one script.
-
-![CLI Help](assets/cli_help.png)
+This separates training, inference, evaluation, model inspection, and experiment tracking instead of handling everything inside a single script.
 
 ---
 
-## Training
+# Training
 
-The model can be trained directly from the command line:
+The model can be trained directly using:
 
 ```bash
 python cli.py train
 ```
 
-Training can also be configured using different hyperparameters.
+Hyperparameters can also be changed.
 
-For example:
+Example:
 
 ```bash
 python cli.py train --lr 0.05
 ```
 
-The training process tracks convergence and stores information such as
-errors, accuracy, learning rate, and learned parameters.
+Training tracks:
 
-Early stopping prevents unnecessary epochs once the classifier has
-converged.
+```
+errors
+accuracy
+learning rate
+epochs
+learned weights
+bias
+```
+
+Early stopping prevents unnecessary epochs after convergence.
 
 ---
 
-## Evaluation
+# Evaluation
 
 Model evaluation is available through:
 
@@ -196,8 +284,7 @@ Model evaluation is available through:
 python cli.py eval --verbose
 ```
 
-The evaluation module calculates the metrics manually from model predictions
-rather than using `sklearn.metrics`.
+The evaluation metrics are calculated **manually from model predictions** rather than using `sklearn.metrics`.
 
 Implemented metrics include:
 
@@ -206,68 +293,47 @@ Implemented metrics include:
 - Precision
 - Recall
 - F1 score
-- True positives
-- True negatives
-- False positives
-- False negatives
-
-Verbose mode also explains what each metric represents rather than only
-printing the numerical value.
-
-![Evaluation Metrics](assets/eval.png)
+- True Positives
+- True Negatives
+- False Positives
+- False Negatives
 
 ### Confusion Matrix
 
-For binary classification, predictions are separated into:
-
-```text
+```
 TP — True Positive
 TN — True Negative
 FP — False Positive
 FN — False Negative
 ```
 
-These values form the basis of the remaining metrics.
-
 ### Accuracy
 
-```text
+```
 Accuracy = (TP + TN) / (TP + TN + FP + FN)
 ```
 
-Accuracy measures the fraction of all predictions that were correct.
-
 ### Precision
 
-```text
+```
 Precision = TP / (TP + FP)
 ```
 
-Precision answers:
-
-> When the model predicts the positive class, how often is it correct?
-
 ### Recall
 
-```text
+```
 Recall = TP / (TP + FN)
 ```
 
-Recall answers:
-
-> Of all actual positive samples, how many did the model identify?
-
 ### F1 Score
 
-```text
+```
 F1 = 2 × (Precision × Recall) / (Precision + Recall)
 ```
 
-F1 combines precision and recall into a single metric.
-
 ---
 
-## Prediction
+# Prediction
 
 New samples can be classified directly from the terminal.
 
@@ -277,29 +343,24 @@ Example:
 python cli.py predict --features 6.3 2.9 4.7 1.6
 ```
 
-The four values correspond to:
+The values represent:
 
-```text
+```
 sepal length
 sepal width
 petal length
 petal width
 ```
 
-Before inference, the new sample is standardized using the same normalization
-statistics learned from the training data.
+Before inference, the sample is standardized using the same normalization statistics learned from the training data.
 
-The CLI also displays a prediction margin, providing an indication of how far
-the sample lies from the perceptron's decision boundary.
-
-![Prediction](assets/predict.png)
+The CLI also displays a prediction margin representing how far the sample lies from the perceptron's decision boundary.
 
 ---
 
-## Model Persistence
+# Model Persistence
 
-A trained model can be stored and reused instead of being retrained for every
-prediction.
+A trained model can be stored and reused instead of being retrained for every prediction.
 
 The saved model includes:
 
@@ -309,24 +370,9 @@ The saved model includes:
 - Feature standard deviations
 - Model metadata
 
-Saving preprocessing statistics alongside the model is important.
-
-During training, the input features are standardized as:
-
-```text
-x_scaled = (x - mean) / std
-```
-
-If a new prediction were normalized using different statistics, the input
-would exist in a different feature space from the one the perceptron was
-trained on.
-
-For this reason, the original training mean and standard deviation are saved
-and reused during inference.
-
 ---
 
-## Experiment History
+# Experiment History
 
 Training experiments can be recorded and compared across sessions.
 
@@ -339,278 +385,206 @@ python cli.py history --log --lr 0.01
 python cli.py history
 ```
 
-Each run records information such as:
+Each run records:
 
 - Timestamp
 - Learning rate
 - Epoch configuration
-- Epochs actually completed
+- Epochs completed
 - Test accuracy
 - Learned weights
 
-This makes it possible to compare how different hyperparameter choices affect
-training behavior.
+---
 
-![Training History](assets/history.png)
+# Stage 6 — Linux Kernel Integration
+
+The latest stage moves beyond the Python ML workflow and explores how lightweight perceptron inference can execute at the **operating-system level**.
+
+The key design decision is:
+
+> **Training and preprocessing remain in Python/user space. Only lightweight inference is currently being explored in Linux kernel space.**
+
+Kernel implementation:
+
+```
+src/kernel/
+├── perceptron_kernel.c
+├── perceptron_model.h
+├── Makefile
+└── README.md
+```
 
 ---
 
-## CLI Commands
+## Kernel-Space Perceptron
 
-| Command | Purpose |
-|---|---|
-| `train` | Train the perceptron and open the interactive terminal UI |
-| `predict` | Classify a flower from four feature measurements |
-| `eval` | Display the confusion matrix and evaluation metrics |
-| `history` | View or record previous training runs |
-| `info` | Display metadata for the saved model |
+The same operation:
 
-To view the complete CLI reference:
-
-```bash
-python cli.py --help
 ```
-
-![CLI Commands](assets/cli_help.png)
-
----
-
-## Perceptron Implementation
-
-For an input vector:
-
-```text
-x = [x1, x2, ..., xn]
-```
-
-the perceptron first calculates the weighted sum:
-
-```text
 z = w · x + b
 ```
 
-where:
+is implemented in C inside a Linux kernel module.
 
-```text
-w = learned weights
-b = bias
+Pipeline:
+
 ```
-
-A step activation function converts the result into a binary prediction:
-
-```text
-prediction = 1    if z > 0
-prediction = 0    otherwise
-```
-
-When a sample is misclassified, the parameters are updated using the
-perceptron learning rule.
-
-```text
-error = actual - predicted
-
-w = w + learning_rate × error × x
-b = b + learning_rate × error
-```
-
-The optimized implementation additionally experiments with
-confidence-scaled updates and learning-rate decay.
-
----
-
-## Learning Rate Decay
-
-Instead of keeping the learning rate constant throughout training, the
-convergent perceptron can gradually reduce it.
-
-Conceptually:
-
-```text
-current_lr = initial_lr × decay^epoch
-```
-
-This allows larger updates early in training while reducing the update size
-as the model approaches convergence.
-
-The terminal interface tracks this decay across epochs.
-
----
-
-## Early Stopping
-
-The model does not necessarily need to run for every configured epoch.
-
-If it achieves zero classification errors for the configured patience period,
-training can stop early.
-
-For example:
-
-```text
-Maximum epochs: 100
-Patience: 3
-
-Perfect epoch
-Perfect epoch
-Perfect epoch
-→ Stop training
-```
-
-This avoids unnecessary computation once the model has converged.
-
----
-
-## Project Architecture
-
-The overall ML workflow is:
-
-```text
-                     Raw Iris Dataset
-                            │
-                            ▼
-                  Binary Class Selection
-                  setosa vs versicolor
-                            │
-                            ▼
-                    Train / Test Split
-                            │
-                            ▼
-                     Standardization
-                            │
-                            ▼
-                  Convergent Perceptron
-                            │
-             ┌──────────────┼──────────────┐
-             │              │              │
-             ▼              ▼              ▼
-         Evaluation     Prediction      Persistence
-             │              │              │
-             ▼              ▼              ▼
-        Confusion       New Flower      Saved Model
-          Matrix         Samples       + Scaler Stats
-             │
-             ▼
-      Precision / Recall
-          / F1 / Accuracy
-                            │
-                            ▼
-                    Experiment History
+Input Features
+      ↓
+Weighted Sum
+      ↓
+w · x + bias
+      ↓
+Step Activation
+      ↓
+Binary Prediction
 ```
 
 ---
 
-## Implementation Highlights
+## Fixed-Point Model Representation
 
-### From-scratch classifier
+To avoid floating-point operations:
 
-The perceptron learning algorithm is implemented manually using NumPy rather
-than a pre-built classifier.
-
-### Manual evaluation metrics
-
-Accuracy, precision, recall, F1, and the confusion matrix are derived directly
-from predictions.
-
-### Consistent preprocessing
-
-Training normalization statistics are stored and reused during inference,
-preventing preprocessing differences between training and prediction.
-
-### Convergence tracking
-
-Errors, accuracy, and learning rate can be tracked across epochs.
-
-### Experiment logging
-
-Multiple runs can be recorded and compared instead of losing previous
-hyperparameter experiments.
-
-### Command-line workflow
-
-Training, evaluation, prediction, history, and model information are exposed
-through separate CLI subcommands.
-
----
-
-## Current Limitations
-
-The current model is still a **single-layer perceptron**.
-
-Its decision boundary is therefore linear.
-
-This makes it suitable for linearly separable classification problems such as
-the selected Iris classes, but it cannot learn non-linearly separable
-relationships.
-
-A classic example is XOR:
-
-```text
-0 XOR 0 → 0
-0 XOR 1 → 1
-1 XOR 0 → 1
-1 XOR 1 → 0
+```
+scale = 1000
 ```
 
-No single straight decision boundary can separate the two XOR classes.
+Example:
 
-Solving this requires introducing hidden layers and non-linear activation
-functions.
-
----
-
-## What's Next
-
-The next stage of the project is to move beyond a single-layer classifier.
-
-Planned extensions:
-
-- Build a multi-layer perceptron from scratch
-- Implement forward propagation
-- Implement backpropagation manually
-- Add non-linear activation functions
-- Train on non-linearly separable problems such as XOR
-- Add automated unit tests for model behavior
-- Add unit tests for manually implemented evaluation metrics
+```
+0.5  →  500
+1.1  → 1100
+-0.2 → -200
+```
 
 ---
 
-## Tech Stack
+# Building the Kernel Module
 
-- **Python**
-- **NumPy** — numerical operations and perceptron implementation
-- **scikit-learn** — Iris dataset loading, train/test splitting, and preprocessing
-- **argparse** — command-line interface
-- **PowerShell / Terminal** — CLI interaction
+Tested on:
 
----
+```
+Ubuntu Linux
+Kernel: 6.2.0-39-generic
+x86_64
+```
 
-## Example Workflow
-
-A complete workflow can be run from the terminal:
+Build:
 
 ```bash
-# Train the model
-python cli.py train
+cd src/kernel
+make
+```
 
-# Inspect model information
-python cli.py info
+Output:
 
-# Make a prediction
-python cli.py predict --features 6.3 2.9 4.7 1.6
-
-# Evaluate the trained model
-python cli.py eval --verbose
-
-# View experiment history
-python cli.py history
+```
+perceptron_kernel.ko
 ```
 
 ---
 
-## Status
+# Running Kernel Inference
 
-**Current stage:** Single-layer perceptron with a complete CLI-based
-training and evaluation workflow.
+Load module:
 
-The project has progressed from basic perceptron experiments to a reusable
-machine-learning tool with preprocessing, evaluation, persistence, inference,
-and experiment tracking.
+```bash
+sudo insmod perceptron_kernel.ko
+```
+
+Check:
+
+```bash
+lsmod | grep perceptron
+```
+
+Logs:
+
+```bash
+sudo dmesg | grep perceptron
+```
+
+Unload:
+
+```bash
+sudo rmmod perceptron_kernel
+```
+
+---
+
+# System Architecture
+
+```
+USER SPACE
+──────────
+Iris Dataset
+    ↓
+Train/Test Split
+    ↓
+Standardization
+    ↓
+Perceptron Training
+    ↓
+Weights + Bias
+    ↓
+Fixed-Point Conversion
+    ↓
+KERNEL SPACE
+────────────
+w · x + b
+    ↓
+Step Activation
+    ↓
+Binary Output
+```
+
+---
+
+# CLI Commands
+
+| Command | Purpose |
+|--------|--------|
+| train | Train model |
+| predict | Run inference |
+| eval | Evaluate model |
+| history | View experiments |
+| info | Model metadata |
+
+---
+
+# Project Status
+
+```
+Perceptron Fundamentals
+        ↓
+Optimized Training
+        ↓
+Iris Classification
+        ↓
+Evaluation System
+        ↓
+Experiment Tracking
+        ↓
+Structured CLI
+        ↓
+Linux Kernel Module
+        ↓
+Fixed-Point Inference
+        ↓
+Python ↔ Kernel Integration (IN PROGRESS)
+```
+
+---
+
+# What's Next
+
+- Export trained weights from Python → kernel
+- Auto-quantization pipeline
+- User-space ↔ kernel communication
+- Match Python vs kernel predictions
+- Performance benchmarking
+- Explore eBPF inference
+- Extend to multi-layer perceptron
+- Implement backpropagation from scratch
+````
