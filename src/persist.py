@@ -1,19 +1,21 @@
+#train → save what the model learned → close the program → reload it later → use it without retraining.
+
 import numpy as np
-import argparse
+import argparse #--save, --load, --info
 import os
 import time
-from sklearn.preprocessing import StandardScaler
-from data_pipeline import build_pipeline
+from sklearn.preprocessing import StandardScaler # feature normalization
+from data_pipeline import build_pipeline #get the files
 from optimised_perceptron import OptimisedPerceptron
 
-MODEL_PATH = "saved_model.npz"
+MODEL_PATH = "saved_model.npz" #basically whatever training was done is saved into this file
 
 
-def _train_silently():
+def _train_silently(): #trains perceptron without printing training output
     import io, sys
     X_train, X_test, y_train, y_test, _, _ = build_pipeline(verbose=False)
     model = OptimisedPerceptron(lr=0.1, epochs=100)
-    buf = io.StringIO()
+    buf = io.StringIO() #this is like a print statement in memory buffer
     sys.stdout = buf
     model.fit(X_train, y_train)
     sys.stdout = sys.__stdout__
@@ -29,7 +31,7 @@ def save_model(model, X_train, path=MODEL_PATH):
     scaler = StandardScaler()
     scaler.fit(X_train)
 
-    np.savez(
+    np.savez( #creats a .npz file using numpy arrays
         path,
         weights          = model.weights,
         bias             = np.array([model.bias]),
@@ -40,21 +42,21 @@ def save_model(model, X_train, path=MODEL_PATH):
         errors_per_epoch = np.array(model.errors_per_epoch),
     )
 
-    G = "\033[92m"; C = "\033[96m"; D = "\033[2m"; X = "\033[0m"
+    G = "\033[92m"; C = "\033[96m"; D = "\033[2m"; X = "\033[0m" #coloured output with ansi terminal codes
     print(f"\n  {G}  Saved{X}")
     print(f"  Path   ->  {C}{os.path.abspath(path)}{X}")
     print(f"  Size   ->  {os.path.getsize(path)/1024:.2f} KB")
     print(f"  Format ->  .npz  {D}(NumPy compressed archive — stores multiple arrays in one file){X}\n")
 
 
-def load_model(path=MODEL_PATH):
+def load_model(path=MODEL_PATH): #loads an exisiting model so it checks if there is a file already saved w training 
     R = "\033[91m"; G = "\033[92m"; C = "\033[96m"; D = "\033[2m"; X = "\033[0m"
 
     if not os.path.exists(path):
         print(f"  {R}No saved model at {path} — run --save first.{X}\n")
         return None, None
 
-    data  = np.load(path)
+    data  = np.load(path) #the following lines are to put prev learned values back into an empty perceptron created so now new model -> loads old wieghts -> ready to predict
     model = OptimisedPerceptron(lr=float(data["lr"][0]), epochs=100)
     model.weights          = data["weights"]
     model.bias             = float(data["bias"][0])
@@ -75,7 +77,7 @@ def load_model(path=MODEL_PATH):
     return model, scaler
 
 
-def show_info(path=MODEL_PATH):
+def show_info(path=MODEL_PATH): #this is just to print what is stored
     R = "\033[91m"; C = "\033[96m"; B = "\033[1m"; D = "\033[2m"; X = "\033[0m"
 
     if not os.path.exists(path):
@@ -83,9 +85,9 @@ def show_info(path=MODEL_PATH):
         return
 
     data     = np.load(path)
-    saved_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(path)))
+    saved_at = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(path))) #metadata of file
 
-    print(f"\n{B}{C}  -- SAVED MODEL INFO ------------------------------------{X}\n")
+    print(f"\n{B}{C}   SAVED MODEL INFO {X}\n")
     print(f"  File       ->  {os.path.abspath(path)}")
     print(f"  Size       ->  {os.path.getsize(path)/1024:.2f} KB")
     print(f"  Saved at   ->  {saved_at}")
@@ -98,9 +100,9 @@ def show_info(path=MODEL_PATH):
 
 def main():
     parser = argparse.ArgumentParser(description="Save and load trained perceptron weights")
-    parser.add_argument("--save", action="store_true", help="Train and save to disk")
-    parser.add_argument("--load", action="store_true", help="Load saved model and verify accuracy")
-    parser.add_argument("--info", action="store_true", help="Show saved file metadata")
+    parser.add_argument("--save", action="store_true", help="Train and save to disk") # ex: build iris dataset, train on optimised perceptrons, obtain the bias and weight and save model info then retrieve it to show test accuracy
+    parser.add_argument("--load", action="store_true", help="Load saved model and verify accuracy") #show accuracy of freshly trained model and saved model
+    parser.add_argument("--info", action="store_true", help="Show saved file metadata") #Inspection
     parser.add_argument("--path", type=str, default=MODEL_PATH)
     args = parser.parse_args()
 
