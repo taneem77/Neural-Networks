@@ -1,25 +1,16 @@
 /*
- * perceptron_kernel.c
- *
- * Basic Linux kernel implementation of single-layer
- * perceptron inference.
- *
- * This module demonstrates how the mathematical inference
- * operation used by the Python perceptron can be represented
- * inside Linux kernel space using integer arithmetic.
- *
- * Training remains in user space.
- *
- * Author: Tanisha Mathur
+ this is basically a basic file : 
+ youve already leanrt the weights and bias which is loaded into kernel and then u find z which gives u 1 or 0 so the training right now is happening in python but demonstrated in kernel
  */
-
-#include <linux/init.h>
-#include <linux/kernel.h>
-#include <linux/module.h>
+// also files are loaded into kernel using.ko 
+// these are linux kernel headers
+#include <linux/init.h> // __init and __exit
+#include <linux/kernel.h>//kernel logging
+#include <linux/module.h>//functionality requred by loadable kernel modules
 
 #include "perceptron_model.h"
 
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("GPL"); //metadata
 MODULE_AUTHOR("Tanisha Mathur");
 MODULE_DESCRIPTION(
     "Single-layer perceptron inference prototype for Linux kernel space"
@@ -44,7 +35,7 @@ MODULE_VERSION("0.1");
  */
 static int perceptron_predict(const long features[NUM_FEATURES],
                               long *activation)
-{
+{//gets features as input data and then activation to store z 
     int i;
     long weighted_sum = perceptron_bias * SCALE_FACTOR;
 
@@ -67,14 +58,15 @@ static int perceptron_predict(const long features[NUM_FEATURES],
  * This is intentionally a minimal prototype. A later stage
  * will receive samples dynamically from user space.
  */
-static void run_demo_inference(void)
+static void run_demo_inference(void) //statis cus it has internal linker which is helping it 
 {
     /*
      * Example standardized input:
      *
      * [0.5, -0.2, 1.1, 0.8]
      *
-     * represented with SCALE_FACTOR = 1000.
+     * represented with SCALE_FACTOR = 1000 bro this is basically ki ull need to specify ki kaunsa kitna decimals u wanna go 
+     its important cus heare u arent using standardscaler
      */
     long sample[NUM_FEATURES] = {
          500,
@@ -94,9 +86,9 @@ static void run_demo_inference(void)
             sample[2],
             sample[3]);
 
-    pr_info("perceptron: activation = %ld\n", activation);
+    pr_info("perceptron: activation = %ld\n", activation); //z value
 
-    pr_info("perceptron: prediction = %d\n", prediction);
+    pr_info("perceptron: prediction = %d\n", prediction); // is 0 or 1 true or false 
 }
 
 
@@ -105,7 +97,7 @@ static void run_demo_inference(void)
  */
 static int __init perceptron_init(void)
 {
-    pr_info("perceptron: kernel module loading\n");
+    pr_info("perceptron: kernel module loading\n"); //kernel code mein u wanna print so 
 
     pr_info("perceptron: model contains %d input features\n",
             NUM_FEATURES);
@@ -132,3 +124,57 @@ static void __exit perceptron_exit(void)
 
 module_init(perceptron_init);
 module_exit(perceptron_exit);
+
+// ── Perceptron Kernel Architecture ───────────────────────────────────────────
+//
+//                     USER SPACE
+// ─────────────────────────────────────────────────────────────────────────────
+//
+//              Python Perceptron
+//                     ↓
+//                  TRAINING
+//                     ↓
+//            learned weights + bias
+//                     ↓
+//         convert to fixed-point integers
+//                     ↓
+//           perceptron_model.h
+//
+//
+//                    KERNEL SPACE
+// ─────────────────────────────────────────────────────────────────────────────
+//
+//           perceptron_kernel.c
+//                     ↓
+//              module loaded
+//                     ↓
+//            perceptron_init()
+//                     ↓
+//           run_demo_inference()
+//                     ↓
+//         hardcoded scaled sample
+//                     ↓
+//           perceptron_predict()
+//                     ↓
+//         ┌──────────────────────┐
+//         │     z = w·x + b      │
+//         └──────────────────────┘
+//                     ↓
+//              is z >= 0?
+//                /        \
+//              yes         no
+//               ↓           ↓
+//               1           0
+//                     ↓
+//           pr_info() → kernel log
+//
+//
+//              module removed
+//                     ↓
+//           perceptron_exit()
+//
+// ─────────────────────────────────────────────────────────────────────────────
+// Training happens in user space.
+// Kernel space only performs inference using the already-trained weights
+// and bias stored in perceptron_model.h.
+// ─────────────────────────────────────────────────────────────────────────────
