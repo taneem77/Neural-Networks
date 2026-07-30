@@ -1,41 +1,29 @@
+
 # Perceptron CLI — From-Scratch ML to Linux Kernel Inference
 
 A single-layer perceptron classifier implemented from scratch with NumPy and progressively developed from basic logic-gate experiments into a complete command-line machine-learning workflow.
 
-The project now extends beyond the Python implementation into **Linux systems programming**, with a basic loadable kernel module that performs fixed-point perceptron inference inside kernel space.
+The project further extends the Python implementation into **Linux systems programming**, with a loadable kernel module that performs fixed-point perceptron inference inside kernel space.
 
 The project currently supports:
 
 - Perceptron training from scratch
-- Evaluation and manually implemented metrics
+- Training convergence and early stopping
+- Iris dataset preprocessing
+- Manual evaluation metrics
 - Prediction on unseen samples
 - Model persistence
 - Experiment tracking
-- Hyperparameter tuning
-- Interactive terminal training
 - Structured CLI commands
 - Linux kernel module compilation and loading
 - Fixed-point perceptron inference in kernel space
 
-The core classifier and evaluation metrics are implemented manually rather than using pre-built ML classifiers or `sklearn.metrics`.
+> `scikit-learn` is used for dataset loading, splitting, and preprocessing.  
+> The perceptron classifier and evaluation metrics are implemented manually.
 
 ---
 
-## Overview
-
-The goal of this project is to understand what happens inside a perceptron instead of treating machine learning as a black box.
-
-The project began with a minimal implementation capable of learning simple logic gates and was gradually extended with convergence handling, real-world data preprocessing, evaluation metrics, model persistence, experiment logging, and a structured CLI.
-
-The current classifier operates on a binary subset of the Iris dataset:
-
-```text
-setosa vs versicolor
-```
-
-The latest stage explores how the same lightweight inference operation can be represented at a lower systems level using a **Linux loadable kernel module written in C**.
-
-### Development Progression
+# Project Progression
 
 ```text
 Perceptron Fundamentals
@@ -44,9 +32,15 @@ Training Improvements
         ↓
 Iris Data Pipeline
         ↓
+Convergence Handling
+        ↓
 Interactive Training
         ↓
-Evaluation & Persistence
+Evaluation & Prediction
+        ↓
+Model Persistence
+        ↓
+Experiment Tracking
         ↓
 Structured CLI
         ↓
@@ -58,23 +52,26 @@ Python ↔ Kernel Integration
         [IN PROGRESS]
 ```
 
+The project began by exploring how a perceptron learns and gradually expanded toward understanding how the same lightweight inference operation can be executed at a lower systems level.
+
 ---
 
-# Project Progress
+# File Overview
 
-## Stage 1 — Perceptron Fundamentals
+| File | Purpose |
+|---|---|
+| `cli.py` | Main command-line entry point that routes training, prediction, evaluation, history, and model-information commands. |
+| Python modules under `src/` | Implement the perceptron, Iris preprocessing, training logic, evaluation, persistence, experiment history, and terminal interface. |
+| `src/kernel/perceptron_kernel.c` | Implements the Linux kernel module and performs fixed-point perceptron inference. |
+| `src/kernel/perceptron_model.h` | Stores the feature count, fixed-point scale factor, prototype weights, and bias used by the kernel module. |
+| `src/kernel/Makefile` | Compiles the kernel source into the loadable `perceptron_kernel.ko` module using Kbuild. |
+| `src/kernel/README.md` | Contains kernel-specific build and execution documentation. |
 
-The project started with a basic perceptron implemented from scratch using Python and NumPy.
+---
 
-The initial model included:
+# Stage 1 — Perceptron Fundamentals
 
-- Weight initialization
-- Bias handling
-- Weighted-sum calculation
-- Step activation
-- Prediction
-- Perceptron learning rule
-- Epoch-based training
+The project started with a perceptron implemented manually using Python and NumPy.
 
 For an input vector:
 
@@ -88,14 +85,14 @@ the perceptron calculates:
 z = w · x + b
 ```
 
-and applies a binary step activation:
+A binary step activation is then applied:
 
 ```text
 prediction = 1    if z >= 0
 prediction = 0    otherwise
 ```
 
-When a sample is misclassified:
+When a sample is incorrectly classified:
 
 ```text
 error = actual - predicted
@@ -104,17 +101,17 @@ w = w + learning_rate × error × x
 b = b + learning_rate × error
 ```
 
-The initial model was tested on simple problems including **AND and OR gates**.
+The first experiments used **AND and OR gates**.
 
-These experiments also demonstrate a fundamental limitation of a single-layer perceptron: it can only learn **linearly separable decision boundaries**.
+This also demonstrates the main limitation of a single-layer perceptron: it can only learn **linearly separable decision boundaries**.
 
 ---
 
-## Stage 2 — Training Improvements
+# Stage 2 — Training Improvements
 
-The initial implementation was extended to make training more stable, observable, and efficient.
+The basic training algorithm was extended to make convergence easier to observe and control.
 
-Added:
+Added features include:
 
 - Error tracking across epochs
 - Accuracy tracking
@@ -124,23 +121,17 @@ Added:
 - Confidence-scaled updates
 - Convergence monitoring
 
-Instead of blindly retaining parameters from the final epoch, the model can preserve its best-performing weights and stop once convergence is detected.
-
-### Learning Rate Decay
-
-The convergent perceptron can gradually reduce its learning rate:
+## Learning-Rate Decay
 
 ```text
 current_lr = initial_lr × decay^epoch
 ```
 
-This allows larger updates early in training while reducing the update size as the model approaches convergence.
+This allows larger updates during early training while gradually reducing the update size as the model approaches convergence.
 
-### Early Stopping
+## Early Stopping
 
-Training does not necessarily need to run for every configured epoch.
-
-For example:
+Instead of always executing the configured maximum number of epochs, training can stop once convergence remains stable.
 
 ```text
 Maximum epochs: 100
@@ -152,27 +143,31 @@ Perfect epoch
 → Stop training
 ```
 
-This prevents unnecessary computation after convergence.
-
 ---
 
-## Stage 3 — Iris Data Pipeline
+# Stage 3 — Iris Data Pipeline
 
-The model was then moved from synthetic logic-gate examples to a real dataset.
+The model was then moved from synthetic logic-gate examples to the Iris dataset.
 
-The Iris dataset is filtered into a binary classification problem:
+The current classification problem is:
 
 ```text
 setosa vs versicolor
 ```
 
-The data pipeline includes:
+The data pipeline performs:
 
-- 100 total samples
-- 4 numerical input features
-- Binary class filtering
-- 80/20 train-test split
-- Feature standardization
+```text
+Load Iris Dataset
+        ↓
+Select Two Classes
+        ↓
+80/20 Train-Test Split
+        ↓
+Standardize Features
+        ↓
+Train Perceptron
+```
 
 The four input features are:
 
@@ -183,36 +178,49 @@ petal length (cm)
 petal width (cm)
 ```
 
-Feature standardization is important because features with larger numerical ranges could otherwise dominate the perceptron's weight updates.
-
-The transformation is:
+Feature standardization is calculated using:
 
 ```text
 x_scaled = (x - mean) / std
 ```
 
-`scikit-learn` is used for dataset loading, train-test splitting, and preprocessing.
-
-The **classifier itself is implemented from scratch**.
+Standardization prevents features with larger numerical ranges from disproportionately affecting the perceptron's weight updates.
 
 ---
 
-## Stage 4 — Interactive Training Interface
+# Training
 
-An interactive terminal interface was added to make the training process visible instead of hiding it behind a single function call.
-
-Run:
+## Command
 
 ```bash
 python cli.py train
 ```
 
-The interface displays:
+A custom learning rate can also be supplied:
+
+```bash
+python cli.py train --lr 0.05
+```
+
+## Execution Flow
+
+```text
+cli.py
+  ↓
+Iris preprocessing
+  ↓
+Perceptron training
+  ↓
+Convergence tracking
+  ↓
+Training results
+```
+
+The training interface displays:
 
 - Dataset information
 - Selected classes
 - Train/test split
-- Model configuration
 - Learning rate
 - Maximum epochs
 - Learning-rate decay
@@ -223,96 +231,39 @@ The interface displays:
 - Learning curve
 - Sample predictions
 
-After training, the model can also be retrained interactively with different hyperparameters.
-
-### Training Output
+## Output
 
 ![Training Interface](assets/train.png)
 
 ---
 
-## Stage 5 — Structured CLI
-
-The project was reorganized into a git-style command-line interface with separate subcommands for different parts of the ML workflow.
-
-```bash
-python cli.py train
-python cli.py predict --features 5.1 3.5 1.4 0.2
-python cli.py eval --verbose
-python cli.py history
-python cli.py info
-```
-
-This separates training, inference, evaluation, model inspection, and experiment tracking instead of handling everything inside one script.
-
-### CLI Interface
-
-![CLI Help](assets/cli_help.png)
-
----
-
-# Training
-
-The model can be trained directly from the command line:
-
-```bash
-python cli.py train
-```
-
-Training can also be configured using different hyperparameters.
-
-For example:
-
-```bash
-python cli.py train --lr 0.05
-```
-
-The training process tracks:
-
-```text
-errors
-accuracy
-learning rate
-epochs completed
-learned weights
-bias
-```
-
-Early stopping prevents unnecessary epochs once the classifier has converged.
-
----
-
 # Evaluation
 
-Model evaluation is available through:
+## Command
 
 ```bash
 python cli.py eval --verbose
 ```
 
-The evaluation module calculates metrics manually from model predictions rather than using `sklearn.metrics`.
+## Execution Flow
 
-Implemented metrics include:
+```text
+cli.py
+  ↓
+Load model and evaluation data
+  ↓
+Generate predictions
+  ↓
+Calculate metrics manually
+  ↓
+Display evaluation report
+```
 
-- Confusion matrix
-- Accuracy
-- Precision
-- Recall
-- F1 score
-- True positives
-- True negatives
-- False positives
-- False negatives
-
-Verbose mode also explains what each metric represents instead of only printing the numerical value.
-
-### Evaluation Output
+## Output
 
 ![Evaluation Metrics](assets/eval.png)
 
-### Confusion Matrix
-
-For binary classification:
+The evaluation module calculates the confusion matrix manually:
 
 ```text
 TP — True Positive
@@ -321,7 +272,7 @@ FP — False Positive
 FN — False Negative
 ```
 
-These values form the basis of the remaining metrics.
+These values are then used to calculate:
 
 ### Accuracy
 
@@ -347,21 +298,21 @@ Recall = TP / (TP + FN)
 F1 = 2 × (Precision × Recall) / (Precision + Recall)
 ```
 
-Implementing these manually makes the relationship between individual predictions and the final evaluation metrics explicit.
+The metrics are implemented manually rather than using `sklearn.metrics`.
 
 ---
 
 # Prediction
 
-New samples can be classified directly from the terminal.
+New Iris samples can be classified directly from the command line.
 
-Example:
+## Command
 
 ```bash
 python cli.py predict --features 6.3 2.9 4.7 1.6
 ```
 
-The four values correspond to:
+The four values represent:
 
 ```text
 sepal length
@@ -370,11 +321,27 @@ petal length
 petal width
 ```
 
-Before inference, the sample is standardized using the same normalization statistics learned from the training data.
+## Execution Flow
 
-The CLI also displays a prediction margin, indicating how far the sample lies from the perceptron's decision boundary.
+```text
+cli.py
+  ↓
+Load saved model
+  ↓
+Load preprocessing statistics
+  ↓
+Standardize new sample
+  ↓
+Calculate w · x + b
+  ↓
+Apply step activation
+  ↓
+Return prediction
+```
 
-### Prediction Output
+The CLI also displays the **prediction margin**, representing the sample's distance from the perceptron decision boundary.
+
+## Output
 
 ![Prediction](assets/predict.png)
 
@@ -382,9 +349,9 @@ The CLI also displays a prediction margin, indicating how far the sample lies fr
 
 # Model Persistence
 
-A trained model can be stored and reused instead of being retrained for every prediction.
+A trained model can be stored and reused instead of retraining before every prediction.
 
-The saved model includes:
+The saved model contains:
 
 - Learned weights
 - Bias
@@ -392,67 +359,127 @@ The saved model includes:
 - Feature standard deviations
 - Model metadata
 
-Saving preprocessing statistics alongside the model is important.
-
 During training:
 
 ```text
-x_scaled = (x - mean) / std
+x_scaled = (x - training_mean) / training_std
 ```
 
-If a new sample were normalized using different statistics, it would exist in a different feature space from the one used during training.
+During prediction:
 
-For this reason, the original training mean and standard deviation are saved and reused during inference.
+```text
+new_x_scaled = (new_x - training_mean) / training_std
+```
+
+Using the original training statistics ensures that new samples are represented in the same feature space as the training data.
+
+## Inspect Saved Model
+
+```bash
+python cli.py info
+```
 
 ---
 
 # Experiment History
 
-Training experiments can be recorded and compared across sessions.
+Training experiments can be recorded and compared across different hyperparameter configurations.
 
-Example:
+## Commands
 
 ```bash
 python cli.py history --log --lr 0.1
 python cli.py history --log --lr 0.05
 python cli.py history --log --lr 0.01
+```
+
+View recorded experiments:
+
+```bash
 python cli.py history
 ```
 
-Each run records information such as:
+Each experiment can record:
 
 - Timestamp
 - Learning rate
 - Epoch configuration
-- Epochs actually completed
+- Epochs completed
 - Test accuracy
 - Learned weights
 
-This makes it possible to compare how different hyperparameter choices affect training behavior.
-
-### Experiment History Output
+## Output
 
 ![Training History](assets/history.png)
 
 ---
 
-# Stage 6 — Linux Kernel Integration
+# Structured CLI
 
-The latest stage moves beyond the Python ML workflow and explores how lightweight perceptron inference can execute at the **operating-system level**.
+Instead of running separate scripts manually, the project exposes the main workflow through CLI subcommands.
 
-The design separates the two responsibilities:
+```bash
+python cli.py --help
+```
+
+## CLI Commands
+
+| Command | Purpose | Output |
+|---|---|---|
+| `python cli.py train` | Train the perceptron | Training progress and accuracy |
+| `python cli.py predict --features ...` | Classify a new sample | Predicted class and decision margin |
+| `python cli.py eval --verbose` | Evaluate the trained model | Confusion matrix and evaluation metrics |
+| `python cli.py history` | View previous experiments | Recorded training runs |
+| `python cli.py info` | Inspect the saved model | Model parameters and metadata |
+| `python cli.py --help` | Display CLI documentation | Commands and arguments |
+
+## Output
+
+![CLI Commands](assets/cli_help.png)
+
+---
+
+# Linux Kernel Integration
+
+The latest stage extends the project from a Python ML workflow into Linux systems programming.
+
+The responsibilities are separated as:
 
 ```text
 USER SPACE
-Training + preprocessing
+
+Training
+Preprocessing
+Evaluation
+Model Parameters
+
+      ↓
 
 KERNEL SPACE
-Lightweight inference
+
+Lightweight Inference
 ```
 
-Training is intentionally kept in Python rather than attempting to train the neural network inside the kernel.
+Training remains in Python.
 
-The kernel implementation is located under:
+The kernel prototype focuses on executing the fundamental perceptron inference operation:
+
+```text
+z = w · x + b
+```
+
+followed by:
+
+```text
+prediction = 1 if z >= 0
+prediction = 0 otherwise
+```
+
+---
+
+# Kernel Files
+
+The kernel implementation is located inside:
 
 ```text
 src/kernel/
@@ -462,35 +489,9 @@ src/kernel/
 └── README.md
 ```
 
----
+## `perceptron_kernel.c`
 
-## Kernel-Space Perceptron
-
-The same fundamental inference operation used by the Python model:
-
-```text
-z = w · x + b
-```
-
-has been reproduced in C inside a Linux loadable kernel module.
-
-The kernel inference path is:
-
-```text
-Input Features
-      ↓
-Weighted Sum
-      ↓
-w · x + bias
-      ↓
-Step Activation
-      ↓
-Binary Prediction
-```
-
-### `perceptron_kernel.c`
-
-Contains:
+Implements:
 
 - Kernel module initialization
 - Kernel module cleanup
@@ -499,28 +500,54 @@ Contains:
 - Demonstration inference
 - Kernel logging using `pr_info`
 
-### `perceptron_model.h`
+The core inference operation follows the same mathematical idea as the Python perceptron:
 
-Contains the current:
+```text
+Input
+  ↓
+Weighted Sum
+  ↓
+w · x + b
+  ↓
+Step Activation
+  ↓
+Prediction
+```
 
-- Number of features
+## `perceptron_model.h`
+
+Contains:
+
+- Number of input features
 - Fixed-point scaling factor
 - Prototype weights
 - Prototype bias
 
-### `Makefile`
+The parameters are currently **hardcoded prototype values**.
 
-Uses the Linux kernel build system to compile the implementation as an external loadable kernel module.
+They are used to verify that the kernel inference path works correctly before automatically transferring trained parameters from Python.
+
+## `Makefile`
+
+Uses the Linux kernel build system to compile the kernel implementation as an external loadable module.
+
+```text
+perceptron_kernel.c
+        ↓
+      Kbuild
+        ↓
+perceptron_kernel.ko
+```
 
 ---
 
-## Why Fixed-Point Arithmetic?
+# Fixed-Point Arithmetic
 
 The Python implementation uses floating-point NumPy operations.
 
-For the initial kernel prototype, model parameters and features are represented as **scaled integers**.
+The kernel prototype instead represents model values using scaled integers.
 
-The current scale factor is:
+The current scaling factor is:
 
 ```text
 SCALE_FACTOR = 1000
@@ -529,22 +556,32 @@ SCALE_FACTOR = 1000
 For example:
 
 ```text
- 0.5  →   500
- 1.1  →  1100
--0.2  →  -200
+ 1.0   →  1000
+ 0.5   →   500
+-0.75  →  -750
+```
+
+Conceptually:
+
+```text
+floating-point value
+        ↓
+multiply by 1000
+        ↓
+integer representation
 ```
 
 This allows the initial kernel inference implementation to use integer arithmetic.
 
-The weights and bias currently stored in `perceptron_model.h` are **prototype parameters** used to establish and test the kernel execution path.
+The current weights and bias inside `perceptron_model.h` are not yet the parameters learned by the Python model.
 
-They are not yet the automatically exported parameters from the trained Python model.
+Automatic model export is part of the next integration stage.
 
 ---
 
 # Building the Kernel Module
 
-The kernel prototype was built and tested on:
+The prototype was tested using:
 
 ```text
 Ubuntu Linux
@@ -552,52 +589,95 @@ Kernel: 6.2.0-39-generic
 Architecture: x86_64
 ```
 
-From the kernel directory:
+Move into the kernel directory:
 
 ```bash
 cd src/kernel
+```
+
+Compile the module:
+
+```bash
 make
 ```
 
-The Linux kernel build process compiles the module and generates:
+## Files Involved
+
+```text
+Makefile
+    ↓
+perceptron_kernel.c
+    +
+perceptron_model.h
+    ↓
+Linux Kernel Build System
+    ↓
+perceptron_kernel.ko
+```
+
+The main generated file is:
 
 ```text
 perceptron_kernel.ko
 ```
 
-### Successful Kernel Build
+`.ko` represents a **kernel object**, which can be dynamically loaded into the running Linux kernel.
+
+## Output
 
 ![Kernel Module Build](assets/kernel_build.png)
 
-The generated `.ko` file is the loadable kernel object containing the perceptron inference implementation.
-
 ---
 
-# Running Perceptron Inference in Kernel Space
+# Running Kernel-Space Inference
 
-The compiled module is loaded using:
+Once the module has been compiled, it can be loaded into the running kernel.
+
+## Load the Module
 
 ```bash
 sudo insmod perceptron_kernel.ko
 ```
 
-Its presence in the running kernel can be verified using:
+`insmod` inserts the compiled kernel object into the running Linux kernel.
+
+---
+
+## Verify the Module
 
 ```bash
 lsmod | grep perceptron
 ```
 
-The inference output is written to the Linux kernel log:
+`lsmod` displays currently loaded kernel modules.
+
+Piping the result through:
+
+```bash
+grep perceptron
+```
+
+filters the output to the perceptron module.
+
+---
+
+## View Inference Output
 
 ```bash
 sudo dmesg | grep perceptron
 ```
 
-### Kernel Inference Output
+The kernel module uses:
 
-![Kernel Perceptron Inference](assets/kernel_inference.png)
+```c
+pr_info(...)
+```
 
-The current demonstration produced:
+to write information to the Linux kernel log.
+
+`dmesg` is therefore used to read the inference output produced by the module.
+
+The current demonstration produces:
 
 ```text
 Input       = [500, -200, 1100, 800]
@@ -605,39 +685,75 @@ Activation  = -2350000
 Prediction  = 0
 ```
 
-The binary step activation therefore behaves as expected:
+Since:
 
 ```text
 activation < 0
-      ↓
+```
+
+the binary step activation produces:
+
+```text
 prediction = 0
 ```
 
-This confirms that the prototype successfully:
+## Output
+
+![Kernel Perceptron Inference](assets/kernel_inference.png)
+
+The complete execution path is:
 
 ```text
-Compiled as a Linux kernel module
+perceptron_model.h
         ↓
-Loaded into the running kernel
+Prototype Weights + Bias
         ↓
-Executed the perceptron weighted sum
+perceptron_kernel.c
         ↓
-Applied the step activation
+Weighted Sum
         ↓
-Produced a binary prediction
+Step Activation
+        ↓
+pr_info()
+        ↓
+Linux Kernel Log
+        ↓
+dmesg
+        ↓
+Visible Prediction
 ```
 
-After execution, the module can be removed using:
+---
+
+## Unload the Module
+
+After execution:
 
 ```bash
 sudo rmmod perceptron_kernel
 ```
 
+This removes the perceptron module from the running kernel.
+
+The full kernel workflow is therefore:
+
+```text
+make
+  ↓
+perceptron_kernel.ko
+  ↓
+insmod
+  ↓
+Kernel Inference
+  ↓
+dmesg
+  ↓
+rmmod
+```
+
 ---
 
 # Current System Architecture
-
-The project currently contains a complete Python ML pipeline and a working kernel-side inference prototype.
 
 ```text
                          USER SPACE
@@ -668,7 +784,7 @@ The project currently contains a complete Python ML pipeline and a working kerne
              │
              ▼
       Precision / Recall
-          / F1 / Accuracy
+        / F1 / Accuracy
                             │
                             ▼
                      Weights + Bias
@@ -696,29 +812,9 @@ The project currently contains a complete Python ML pipeline and a working kerne
                     Binary Prediction
 ```
 
-The kernel inference path is working.
+At the current stage, the **kernel inference path is working independently**.
 
-The connection between the trained Python model and the kernel representation is the next integration stage.
-
----
-
-# CLI Commands
-
-| Command | Purpose |
-|---|---|
-| `train` | Train the perceptron and open the interactive terminal UI |
-| `predict` | Classify a flower from four feature measurements |
-| `eval` | Display the confusion matrix and evaluation metrics |
-| `history` | View or record previous training runs |
-| `info` | Display metadata for the saved model |
-
-To view the complete CLI reference:
-
-```bash
-python cli.py --help
-```
-
-![CLI Commands](assets/cli_help.png)
+The connection between the trained Python model and the kernel representation is still in progress.
 
 ---
 
@@ -745,59 +841,54 @@ Neural-Networks/
 │       ├── Makefile
 │       └── README.md
 │
+├── cli.py
 ├── .gitignore
 └── README.md
 ```
 
 ---
 
-# Implementation Highlights
+# Command → File → Output Reference
 
-### From-Scratch Classifier
+| Command | Main Component | Result |
+|---|---|---|
+| `python cli.py --help` | `cli.py` | Displays available CLI commands |
+| `python cli.py train` | CLI + training/perceptron modules | Trains the model and displays convergence information |
+| `python cli.py eval --verbose` | CLI + evaluation module | Displays confusion matrix and manually calculated metrics |
+| `python cli.py predict --features ...` | CLI + saved model | Standardizes input and produces a prediction |
+| `python cli.py info` | CLI + model persistence | Displays saved model information |
+| `python cli.py history` | CLI + experiment history | Displays recorded training experiments |
+| `make` | `Makefile` + kernel source | Generates `perceptron_kernel.ko` |
+| `sudo insmod perceptron_kernel.ko` | `perceptron_kernel.ko` | Loads the module and executes initialization/inference |
+| `lsmod \| grep perceptron` | Linux module system | Confirms that the module is loaded |
+| `sudo dmesg \| grep perceptron` | `pr_info()` output | Displays kernel-space inference |
+| `sudo rmmod perceptron_kernel` | Linux module system | Removes the module |
 
-The perceptron learning algorithm is implemented manually using NumPy rather than a pre-built classifier.
+---
 
-### Manual Evaluation Metrics
+# Key Concepts Covered
 
-Accuracy, precision, recall, F1, and the confusion matrix are derived directly from predictions.
-
-### Consistent Preprocessing
-
-Training normalization statistics are stored and reused during inference, preventing preprocessing differences between training and prediction.
-
-### Convergence Tracking
-
-Errors, accuracy, and learning rate can be tracked across epochs.
-
-### Model Persistence
-
-Learned parameters and preprocessing statistics can be stored and reused for future predictions.
-
-### Experiment Logging
-
-Multiple runs can be recorded and compared instead of losing previous hyperparameter experiments.
-
-### Command-Line Workflow
-
-Training, evaluation, prediction, history, and model information are exposed through separate CLI subcommands.
-
-### Linux Kernel Prototype
-
-The perceptron's inference equation has now also been implemented in C as a Linux loadable kernel module using fixed-point integer arithmetic.
-
-The module has been successfully compiled, loaded, executed, and unloaded on Ubuntu Linux.
+| Stage | Concepts |
+|---|---|
+| Perceptron fundamentals | Weights, bias, weighted sum, activation, learning rule |
+| Logic-gate experiments | Linear separability |
+| Training improvements | Convergence, early stopping, learning-rate decay, best weights |
+| Iris pipeline | Dataset filtering, train/test split, feature standardization |
+| Evaluation | TP, TN, FP, FN, accuracy, precision, recall, F1 |
+| Prediction | Preprocessing unseen samples and decision margins |
+| Persistence | Saving model parameters and scaler statistics |
+| Experiment tracking | Comparing hyperparameter configurations |
+| CLI | Separating training, evaluation, prediction, history, and inspection |
+| Kernel modules | Compilation, insertion, kernel logging, and removal |
+| Fixed-point inference | Representing floating-point model values as scaled integers |
 
 ---
 
 # Current Limitations
 
-The current ML model remains a **single-layer perceptron**.
+The current classifier is a **single-layer perceptron**, so its decision boundary is linear.
 
-Its decision boundary is therefore linear.
-
-This makes it suitable for linearly separable classification problems such as the selected Iris classes, but it cannot learn non-linearly separable relationships.
-
-A classic example is XOR:
+A classic example of a problem it cannot solve is XOR:
 
 ```text
 0 XOR 0 → 0
@@ -806,48 +897,51 @@ A classic example is XOR:
 1 XOR 1 → 0
 ```
 
-No single linear decision boundary can separate the two XOR classes.
+No single linear boundary can separate the XOR classes.
 
-The kernel implementation is also currently an **initial prototype**.
+The kernel implementation is also currently an initial prototype.
 
 At this stage:
 
 - Training remains in Python
 - Preprocessing remains in user space
-- Kernel parameters are prototype values
-- The demonstration input is currently defined inside the module
-- The Python CLI does not yet communicate directly with the kernel
+- Kernel weights and bias are hardcoded prototype values
+- The demonstration input is currently defined inside the kernel module
+- Python does not yet send samples directly to the kernel
 - Trained Python parameters are not yet exported automatically
-
-These limitations define the next development stage.
 
 ---
 
-# What's Next
+# Next Stage
 
-The immediate focus is completing the connection between the existing ML pipeline and the Linux kernel prototype.
+The next stage is connecting the trained Python model to the existing kernel inference implementation.
 
-### Python ↔ Kernel Integration
+```text
+Train Python Model
+        ↓
+Extract Weights + Bias
+        ↓
+Quantize to Fixed-Point
+        ↓
+Generate Kernel Model
+        ↓
+Pass Standardized Input
+        ↓
+Kernel Inference
+        ↓
+Compare Outputs
+```
 
-1. Export the trained perceptron weights and bias from Python.
-2. Quantize the learned parameters into fixed-point values.
+Planned work includes:
+
+1. Export the trained perceptron weights and bias.
+2. Convert the learned floating-point parameters to fixed-point integers.
 3. Automatically generate the kernel model representation.
 4. Create a user-space ↔ kernel-space communication interface.
-5. Pass standardized Iris samples from Python to the kernel.
-6. Compare Python and kernel predictions for consistency.
-7. Benchmark inference latency and communication overhead.
+5. Pass standardized Iris samples to the kernel.
+6. Compare Python and kernel predictions.
+7. Measure inference and communication overhead.
 8. Explore eBPF as an alternative kernel execution mechanism.
-
-### Neural Network Extension
-
-After the systems-integration stage:
-
-- Build a multi-layer perceptron from scratch
-- Implement forward propagation
-- Implement backpropagation manually
-- Introduce non-linear activation functions
-- Train on non-linearly separable problems such as XOR
-- Add automated model and evaluation tests
 
 ---
 
@@ -867,40 +961,44 @@ After the systems-integration stage:
 
 # Example Workflow
 
-## Python ML Workflow
+## Python Workflow
 
 ```bash
+# View available commands
+python cli.py --help
+
 # Train the model
 python cli.py train
 
-# Inspect the saved model
-python cli.py info
-
-# Make a prediction
-python cli.py predict --features 6.3 2.9 4.7 1.6
-
 # Evaluate the model
 python cli.py eval --verbose
+
+# Predict an unseen sample
+python cli.py predict --features 6.3 2.9 4.7 1.6
+
+# Inspect the saved model
+python cli.py info
 
 # View experiment history
 python cli.py history
 ```
 
-## Linux Kernel Workflow
+## Kernel Workflow
 
 ```bash
+# Enter kernel directory
 cd src/kernel
 
-# Build the kernel module
+# Compile the module
 make
 
-# Load it
+# Load the module
 sudo insmod perceptron_kernel.ko
 
 # Verify that it is loaded
 lsmod | grep perceptron
 
-# View kernel-space inference
+# View kernel inference output
 sudo dmesg | grep perceptron
 
 # Unload the module
@@ -911,9 +1009,7 @@ sudo rmmod perceptron_kernel
 
 # Status
 
-**Current stage:** Single-layer perceptron with a complete CLI-based training and evaluation workflow, now extended with a working Linux kernel-space inference prototype.
-
-The project has progressed through:
+**Current stage:** Single-layer perceptron with a complete CLI-based training, prediction, and evaluation workflow, extended with a working Linux kernel-space inference prototype.
 
 ```text
 Perceptron Fundamentals
@@ -940,10 +1036,11 @@ Python ↔ Kernel Integration
         [IN PROGRESS]
 ```
 
-The project began by answering:
+The project began with:
 
 > **How does a perceptron actually learn?**
 
-The current systems stage extends that question to:
+and currently extends that idea toward:
 
-> **How can lightweight ML inference move from a high-level Python workflow toward lower-level operating-system execution?**
+> **How can lightweight ML inference move from a Python workflow toward lower-level operating-system execution?**
+````
