@@ -1,8 +1,10 @@
 #do everything and save it in log 
+#this is NOT saving trained data , its saving whats what happend during the training 
+#persist.py was basically saving only final trainied data to use it this is to show what was happening
 
 import numpy as np
 import argparse
-import logging
+import logging # new this is a python module which lets u record message like debug info warning error and critical
 import os
 import time
 from datetime import datetime
@@ -16,7 +18,7 @@ LOG_DIR = "logs"
 # logging writes to a file — every training run is permanently saved
 # this is standard ML practice called "experiment tracking"
 # you can run 10 experiments with different learning rates and compare them later
-
+#experiment tracking of sorts 
 
 def _make_logger():
     # each run gets its own timestamped file: logs/run_20260720_143022.log
@@ -36,15 +38,16 @@ def _make_logger():
     sh = logging.StreamHandler()
     sh.setLevel(logging.INFO)
     sh.setFormatter(logging.Formatter("  %(levelname)-8s  %(message)s"))
+    #stram handfles is info which is shown on termianl and file handles is debugg which is .log file
 
-    logger.addHandler(fh)
+    logger.addHandler(fh) #both handles connected to logger
     logger.addHandler(sh)
     return logger, log_path
 
 
 def train_and_log(lr=0.1, epochs=100):
     logger, log_path = _make_logger()
-    logger.info("=== NEW RUN ===")
+    logger.info("NEW RUN ")
     logger.info(f"lr={lr}  epochs={epochs}")
 
     X_train, X_test, y_train, y_test, _, _ = build_pipeline(verbose=False)
@@ -52,7 +55,7 @@ def train_and_log(lr=0.1, epochs=100):
 
     model = OptimisedPerceptron(lr=lr, epochs=epochs)
 
-    t_start = time.time()
+    t_start = time.time() #measure the training time start and time to see how long experiment takes 
     model.fit(X_train, y_train)
     elapsed = time.time() - t_start
 
