@@ -1,20 +1,20 @@
+#this is where youre evaluating how good the model is 
 import numpy as np
 import argparse
 from data_pipeline import build_pipeline
 from optimised_perceptron import OptimisedPerceptron
 
 
-def _get_predictions():
+def _get_predictions(): #getting the predictions
     import io, sys
     X_train, X_test, y_train, y_test, _, class_names = build_pipeline(verbose=False)
     model = OptimisedPerceptron(lr=0.1, epochs=100)
     buf = io.StringIO(); sys.stdout = buf
     model.fit(X_train, y_train)
     sys.stdout = sys.__stdout__
-    return np.array(model.predict(X_test)), y_test, class_names
+    return np.array(model.predict(X_test)), y_test, class_names #returns predictions made my model correct answer and class name 
 
 
-# ── confusion matrix ──────────────────────────────────────────────────────────
 # not using sklearn.metrics — built from scratch so every number is explainable
 #
 # what each cell means:
@@ -23,12 +23,12 @@ def _get_predictions():
 #   FP (false positive) — predicted versicolor, actually was setosa       [wrong — false alarm]
 #   FN (false negative) — predicted setosa, actually was versicolor       [wrong — missed it]
 
-def confusion_counts(y_true, y_pred):
+def confusion_counts(y_true, y_pred): #code manually counts the pairs
     TP = sum(1 for p, a in zip(y_pred, y_true) if p == 1 and a == 1)
     TN = sum(1 for p, a in zip(y_pred, y_true) if p == 0 and a == 0)
     FP = sum(1 for p, a in zip(y_pred, y_true) if p == 1 and a == 0)
     FN = sum(1 for p, a in zip(y_pred, y_true) if p == 0 and a == 1)
-    return TP, TN, FP, FN
+    return TP, TN, FP, FN #zips them
 
 def precision(TP, FP):
     # of everything predicted as versicolor, how many actually were?
@@ -43,17 +43,17 @@ def recall(TP, FN):
 def f1_score(p, r):
     # harmonic mean of precision and recall
     # cant game it — jacking recall up (predict everything positive) destroys precision, F1 drops
-    return 2 * p * r / (p + r) if (p + r) > 0 else 0.0
+    return 2 * p * r / (p + r) if (p + r) > 0 else 0.0 #this is f1 score , it uses harmonic mean intuitively: I'm not giving you a great overall score just because one metric is great while the other is awful
 
 def accuracy(TP, TN, total):
-    return (TP + TN) / total
+    return (TP + TN) / total #precision formula
 
 
 def print_confusion_matrix(TP, TN, FP, FN, class_names):
     c0, c1 = class_names[0], class_names[1]
     G = "\033[92m"; R = "\033[91m"; D = "\033[2m"; B = "\033[1m"; C = "\033[96m"; X = "\033[0m"
 
-    print(f"\n{B}{C}  -- CONFUSION MATRIX ------------------------------------{X}\n")
+    print(f"\n{B}{C}   CONFUSION MATRIX {X}\n") #this is basically showing what was right and where exactly the classifier gets confused 
     print(f"  {D}{'':20}   Predicted{X}")
     print(f"  {D}{'':20}   {c0:<14}  {c1}{X}")
     print(f"  {D}{'-'*50}{X}")
@@ -69,7 +69,7 @@ def print_metrics(TP, TN, FP, FN, p, r, f1, acc):
     def bar(v, w=22):
         return f"{G}{'|' * int(v * w)}{D}{'.' * (w - int(v * w))}{X}"
 
-    print(f"{B}{C}  -- METRICS ---------------------------------------------{X}\n")
+    print(f"{B}{C}   METRICS{X}\n")
     rows = [
         ("Accuracy",  acc, "correct predictions / total — simple but misleads on imbalanced data"),
         ("Precision", p,   "of predicted versicolor: how many were actually versicolor?"),
@@ -83,7 +83,7 @@ def print_metrics(TP, TN, FP, FN, p, r, f1, acc):
 
 def print_explanations():
     B = "\033[1m"; D = "\033[2m"; C = "\033[96m"; X = "\033[0m"
-    print(f"\n{B}{C}  -- METRIC EXPLANATIONS ---------------------------------{X}\n")
+    print(f"\n{B}{C}  METRIC EXPLANATIONS{X}\n")
     items = [
         ("Precision", "When the model says versicolor, is it right?",
          "High = few false alarms. Low = model says versicolor too aggressively."),
@@ -126,3 +126,40 @@ if __name__ == "__main__":
 #
 # python evaluate.py
 # python evaluate.py --verbose
+
+# ── Evaluation flow ───────────────────────────────────────────────────────────
+#
+#               TRAINING DATA
+#                     ↓
+#           OptimisedPerceptron
+#                     ↓
+#                  TRAIN
+#                     ↓
+#                  MODEL
+#                     ↓
+#                  X_test
+#                     ↓
+#              PREDICTIONS
+#                     ↓
+#          compare against y_test
+#                     ↓
+#           ┌─────────┴─────────┐
+#           ↓                   ↓
+#        Correct              Wrong
+#        TP / TN              FP / FN
+#           \                   /
+#            \                 /
+#             CONFUSION MATRIX
+#                    ↓
+#       ┌────────────┼────────────┐
+#       ↓            ↓            ↓
+#   Precision      Recall      Accuracy
+#       \            /
+#        \          /
+#           F1 Score
+#
+# Precision → when we predict Versicolor, how often are we right?
+# Recall    → of all actual Versicolors, how many did we find?
+# Accuracy  → how many total predictions were correct?
+# F1 Score  → balances precision and recall into one score
+# ─────────────────────────────────────────────────────────────────────────────
