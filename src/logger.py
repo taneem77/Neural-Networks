@@ -1,3 +1,5 @@
+#do everything and save it in log 
+
 import numpy as np
 import argparse
 import logging
