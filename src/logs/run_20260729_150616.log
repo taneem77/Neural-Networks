@@ -1,0 +1,9 @@
+2026-07-29 15:06:16  INFO      === NEW RUN ===
+2026-07-29 15:06:16  INFO      lr=0.05  epochs=100
+2026-07-29 15:06:16  INFO      Data: 80 train  20 test  4 features
+2026-07-29 15:06:16  DEBUG     epoch   1  errors=3
+2026-07-29 15:06:16  DEBUG     epoch   2  errors=0
+2026-07-29 15:06:16  INFO      Done in 0.007s  |  epochs run=2
+2026-07-29 15:06:16  INFO      Train acc=100.0%  |  Test acc=100.0%
+2026-07-29 15:06:16  INFO      Weights: [0.029, -0.1153, 0.1075, 0.1071]
+2026-07-29 15:06:16  INFO      Bias: -0.0500
