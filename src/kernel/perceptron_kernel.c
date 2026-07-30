@@ -1,134 +1,102 @@
-/*
- * perceptron_kernel.c
- *
- * Basic Linux kernel implementation of single-layer
- * perceptron inference.
- *
- * This module demonstrates how the mathematical inference
- * operation used by the Python perceptron can be represented
- * inside Linux kernel space using integer arithmetic.
- *
- * Training remains in user space.
- *
- * Author: Tanisha Mathur
- */
-
-#include <linux/init.h>
-#include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/fs.h>
+#include <linux/uaccess.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include "perceptron_kmod.h"
 
-#include "perceptron_model.h"
+#define DEVICE_NAME "perceptron_kmod"
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Tanisha Mathur");
-MODULE_DESCRIPTION(
-    "Single-layer perceptron inference prototype for Linux kernel space"
-);
-MODULE_VERSION("0.1");
+static int major;
+static struct class *perceptron_class;
+static struct cdev perceptron_cdev;
 
-
-/*
- * perceptron_predict
- *
- * Performs:
- *
- *      z = w1*x1 + w2*x2 + ... + wn*xn + bias
- *
- * followed by:
- *
- *      prediction = 1 if z >= 0
- *                   0 otherwise
- *
- * Features are expected to already be represented using the
- * same fixed-point scale as the model.
+/* Computes sum(inputs[i] * weights[i]) in Q16.16 fixed point.
+ * This is the same math as the perceptron's weighted-sum step in
+ * day3/day4 of the Python project, just done in kernel space via
+ * ioctl instead of numpy, to demonstrate a kernel-accelerated path.
  */
-static int perceptron_predict(const long features[NUM_FEATURES],
-                              long *activation)
+static long perceptron_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
+    struct dot_product_request req;
+    long acc;
     int i;
-    long weighted_sum = perceptron_bias * SCALE_FACTOR;
 
-    for (i = 0; i < NUM_FEATURES; i++) {
-        weighted_sum += perceptron_weights[i] * features[i];
-    }
+    if (cmd != PERCEPTRON_DOT)
+        return -ENOTTY;
 
-    *activation = weighted_sum;
+    if (copy_from_user(&req, (struct dot_product_request __user *)arg, sizeof(req)))
+        return -EFAULT;
 
-    return weighted_sum >= 0 ? 1 : 0;
-}
+    if (req.len < 0 || req.len > MAX_VEC_LEN)
+        return -EINVAL;
 
+    acc = 0;
+    for (i = 0; i < req.len; i++)
+        acc += (req.inputs[i] * req.weights[i]) >> 16;
 
-/*
- * run_demo_inference
- *
- * Runs one sample through the kernel-space perceptron when
- * the module is loaded.
- *
- * This is intentionally a minimal prototype. A later stage
- * will receive samples dynamically from user space.
- */
-static void run_demo_inference(void)
-{
-    /*
-     * Example standardized input:
-     *
-     * [0.5, -0.2, 1.1, 0.8]
-     *
-     * represented with SCALE_FACTOR = 1000.
-     */
-    long sample[NUM_FEATURES] = {
-         500,
-        -200,
-        1100,
-         800
-    };
+    req.result = acc;
 
-    long activation;
-    int prediction;
+    if (copy_to_user((struct dot_product_request __user *)arg, &req, sizeof(req)))
+        return -EFAULT;
 
-    prediction = perceptron_predict(sample, &activation);
-
-    pr_info("perceptron: demo input = [%ld, %ld, %ld, %ld]\n",
-            sample[0],
-            sample[1],
-            sample[2],
-            sample[3]);
-
-    pr_info("perceptron: activation = %ld\n", activation);
-
-    pr_info("perceptron: prediction = %d\n", prediction);
-}
-
-
-/*
- * Called when the module is inserted into the kernel.
- */
-static int __init perceptron_init(void)
-{
-    pr_info("perceptron: kernel module loading\n");
-
-    pr_info("perceptron: model contains %d input features\n",
-            NUM_FEATURES);
-
-    pr_info("perceptron: fixed-point scale = %d\n",
-            SCALE_FACTOR);
-
-    run_demo_inference();
-
-    pr_info("perceptron: module loaded successfully\n");
-
+    pr_info("perceptron_kmod: dot product over %d elements -> %ld\n", req.len, acc);
     return 0;
 }
 
+static const struct file_operations perceptron_fops = {
+    .owner = THIS_MODULE,
+    .unlocked_ioctl = perceptron_ioctl,
+};
 
-/*
- * Called when the module is removed from the kernel.
- */
-static void __exit perceptron_exit(void)
+static int __init perceptron_init(void)
 {
-    pr_info("perceptron: kernel module unloaded\n");
+    dev_t dev;
+    int ret;
+
+    ret = alloc_chrdev_region(&dev, 0, 1, DEVICE_NAME);
+    if (ret < 0)
+        return ret;
+    major = MAJOR(dev);
+
+    cdev_init(&perceptron_cdev, &perceptron_fops);
+    ret = cdev_add(&perceptron_cdev, dev, 1);
+    if (ret < 0) {
+        unregister_chrdev_region(dev, 1);
+        return ret;
+    }
+
+    /* NOTE: class_create() dropped its owner/THIS_MODULE argument in
+     * kernel 6.4+. If you're on an older kernel and this fails to build,
+     * change the line below to: class_create(THIS_MODULE, DEVICE_NAME)
+     */
+    perceptron_class = class_create(DEVICE_NAME);
+    if (IS_ERR(perceptron_class)) {
+        cdev_del(&perceptron_cdev);
+        unregister_chrdev_region(dev, 1);
+        return PTR_ERR(perceptron_class);
+    }
+    device_create(perceptron_class, NULL, dev, NULL, DEVICE_NAME);
+
+    pr_info("perceptron_kmod: loaded, major=%d\n", major);
+    return 0;
 }
 
+static void __exit perceptron_exit(void)
+{
+    dev_t dev = MKDEV(major, 0);
+
+    device_destroy(perceptron_class, dev);
+    class_destroy(perceptron_class);
+    cdev_del(&perceptron_cdev);
+    unregister_chrdev_region(dev, 1);
+    pr_info("perceptron_kmod: unloaded\n");
+}
 
 module_init(perceptron_init);
 module_exit(perceptron_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Tanisha");
+MODULE_DESCRIPTION("Kernel-space fixed-point dot product accelerator for perceptron inference");

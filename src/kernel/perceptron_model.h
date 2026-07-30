@@ -1,40 +1,23 @@
-#ifndef PERCEPTRON_MODEL_H
-#define PERCEPTRON_MODEL_H
+#ifndef PERCEPTRON_KMOD_H
+#define PERCEPTRON_KMOD_H
+
+#include <linux/ioctl.h>
+
+#define MAX_VEC_LEN 64
 
 /*
- * perceptron_model.h
- *
- * Fixed-point model parameters for the Linux kernel
- * perceptron inference prototype.
- *
- * SCALE_FACTOR = 1000
- *
- * Examples:
- *   1.0   ->  1000
- *   0.5   ->   500
- *  -0.75  ->  -750
+ * Fixed-point (Q16.16) request/response struct.
+ * Kernel space has no easy FPU access, so inputs/weights/result
+ * are all scaled integers: real_value = raw / 65536.
  */
-
-#define NUM_FEATURES 4
-#define SCALE_FACTOR 1000
-
-/*
- * Prototype perceptron weights.
- *
- * These values are currently used to test kernel-space
- * inference. They will later be replaced by parameters
- * exported from the trained Python perceptron.
- */
-static const long perceptron_weights[NUM_FEATURES] = {
-    -500,
-     800,
-    -1200,
-    -900
+struct dot_product_request {
+    long inputs[MAX_VEC_LEN];
+    long weights[MAX_VEC_LEN];
+    int len;
+    long result;
 };
 
-/*
- * Prototype bias.
- */
-static const long perceptron_bias = 100;
+#define PERCEPTRON_MAGIC 'P'
+#define PERCEPTRON_DOT _IOWR(PERCEPTRON_MAGIC, 1, struct dot_product_request)
 
-#endif /* PERCEPTRON_MODEL_H */
+#endif
