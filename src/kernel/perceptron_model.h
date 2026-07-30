@@ -1,5 +1,6 @@
-#ifndef PERCEPTRON_MODEL_H
-#define PERCEPTRON_MODEL_H
+#ifndef PERCEPTRON_MODEL_H //include guard, if perceptron model has not already been defined
+#define PERCEPTRON_MODEL_H  
+/*mark as define now */
 
 /*
  * perceptron_model.h
