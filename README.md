@@ -1,4 +1,3 @@
-
 # Perceptron CLI — From-Scratch ML to Linux Kernel Inference
 
 A single-layer perceptron classifier implemented from scratch with NumPy and progressively developed from basic logic-gate experiments into a complete command-line machine-learning workflow.
@@ -17,6 +16,7 @@ The project currently supports:
 - Structured CLI commands
 - Linux kernel module compilation and loading
 - Fixed-point perceptron inference in kernel space
+- User-space ↔ kernel-space communication via a character device
 
 > `scikit-learn` is used for dataset loading, splitting, and preprocessing.  
 > The perceptron classifier and evaluation metrics are implemented manually.
@@ -49,7 +49,6 @@ Linux Kernel Module
 Fixed-Point Kernel Inference
         ↓
 Python ↔ Kernel Integration
-        [IN PROGRESS]
 ```
 
 The project began by exploring how a perceptron learns and gradually expanded toward understanding how the same lightweight inference operation can be executed at a lower systems level.
@@ -64,7 +63,9 @@ The project began by exploring how a perceptron learns and gradually expanded to
 | Python modules under `src/` | Implement the perceptron, Iris preprocessing, training logic, evaluation, persistence, experiment history, and terminal interface. |
 | `src/kernel/perceptron_kernel.c` | Implements the Linux kernel module and performs fixed-point perceptron inference. |
 | `src/kernel/perceptron_model.h` | Stores the feature count, fixed-point scale factor, prototype weights, and bias used by the kernel module. |
-| `src/kernel/Makefile` | Compiles the kernel source into the loadable `perceptron_kernel.ko` module using Kbuild. |
+| `src/kernel/perceptron_kmod.c` | Implements a character device that exposes fixed-point dot-product computation to user space via `ioctl()`. |
+| `src/kernel/kernel_bridge.py` | User-space bridge that converts vectors to Q16.16 fixed-point, sends them to `/dev/perceptron_kmod`, and converts the result back to floating-point. |
+| `src/kernel/Makefile` | Compiles the kernel sources into loadable `.ko` modules using Kbuild. |
 | `src/kernel/README.md` | Contains kernel-specific build and execution documentation. |
 
 ---
@@ -485,6 +486,8 @@ The kernel implementation is located inside:
 src/kernel/
 ├── perceptron_kernel.c
 ├── perceptron_model.h
+├── perceptron_kmod.c
+├── kernel_bridge.py
 ├── Makefile
 └── README.md
 ```
@@ -753,6 +756,141 @@ rmmod
 
 ---
 
+# Python ↔ Kernel Communication
+
+The project has now been extended beyond standalone kernel inference by introducing a **user-space ↔ kernel-space communication layer**.
+
+A new kernel module, `perceptron_kmod`, exposes a **character device** that allows user-space applications to request fixed-point computations using the Linux `ioctl()` interface.
+
+The communication bridge is implemented in:
+
+```text
+src/kernel/kernel_bridge.py
+```
+
+Its responsibilities are:
+
+- Convert floating-point vectors into **Q16.16 fixed-point integers**
+- Open the `/dev/perceptron_kmod` device
+- Send the vectors to the kernel using `ioctl()`
+- Receive the computed dot product
+- Convert the fixed-point result back into floating-point
+
+---
+
+## Kernel Communication Workflow
+
+```text
+Python Perceptron
+        │
+        ▼
+kernel_bridge.py
+        │
+        ▼
+Convert Float → Q16.16
+        │
+        ▼
+ioctl()
+        │
+════════ USER / KERNEL BOUNDARY ════════
+        │
+        ▼
+perceptron_kmod
+        │
+        ▼
+Fixed-Point Dot Product
+        │
+        ▼
+Return Activation
+        │
+════════ USER / KERNEL BOUNDARY ════════
+        │
+        ▼
+Convert Q16.16 → Float
+        │
+        ▼
+Prediction in Python
+```
+
+---
+
+## Building the Communication Module
+
+Compile both kernel modules:
+
+```bash
+make
+```
+
+This generates:
+
+```text
+perceptron_kernel.ko
+perceptron_kmod.ko
+```
+
+Load the communication module:
+
+```bash
+sudo insmod perceptron_kmod.ko
+```
+
+Verify that it is loaded:
+
+```bash
+lsmod | grep perceptron
+```
+
+Check the kernel log:
+
+```bash
+sudo dmesg | tail -20
+```
+
+Verify the character device:
+
+```bash
+ls /dev/perceptron_kmod
+```
+
+### Output
+
+![Kernel Communication Module](assets/kernel_module_loaded.png)
+
+The screenshot above demonstrates:
+
+- Successful loading of `perceptron_kmod`
+- Registration of the character device
+- Creation of `/dev/perceptron_kmod`
+- Successful initialization inside kernel space
+
+---
+
+## Executing a Kernel Computation from Python
+
+Run:
+
+```bash
+python3 kernel_bridge.py
+```
+
+### Output
+
+![Kernel Bridge Output](assets/kernel_bridge_output.png)
+
+Example:
+
+```text
+kernel-computed dot product: -0.79998779296875
+expected (python):           -0.8
+```
+
+The slight numerical difference is expected because the kernel performs the computation using **Q16.16 fixed-point arithmetic**, while Python performs the same calculation using floating-point arithmetic.
+
+This demonstrates successful communication between Python and the Linux kernel while preserving numerical accuracy within the limits of fixed-point representation.
+
+---
+
 # Current System Architecture
 
 ```text
@@ -789,10 +927,14 @@ rmmod
                             ▼
                      Weights + Bias
                             │
-                     [Next Stage]
-                            │
                             ▼
                   Fixed-Point Export
+                            │
+                            ▼
+                     kernel_bridge.py
+                            │
+                            ▼
+                        ioctl()
 
 ════════════════ USER / KERNEL BOUNDARY ════════════════
 
@@ -812,9 +954,9 @@ rmmod
                     Binary Prediction
 ```
 
-At the current stage, the **kernel inference path is working independently**.
+The kernel inference path and the user-space ↔ kernel-space communication bridge are both working.
 
-The connection between the trained Python model and the kernel representation is still in progress.
+The remaining step is exporting the trained Python model's actual weights and bias into the kernel representation automatically, instead of using hardcoded prototype values.
 
 ---
 
@@ -830,7 +972,9 @@ Neural-Networks/
 │   ├── predict.png
 │   ├── history.png
 │   ├── kernel_build.png
-│   └── kernel_inference.png
+│   ├── kernel_inference.png
+│   ├── kernel_module_loaded.png
+│   └── kernel_bridge_output.png
 │
 ├── src/
 │   ├── Python perceptron and CLI modules
@@ -838,6 +982,8 @@ Neural-Networks/
 │   └── kernel/
 │       ├── perceptron_kernel.c
 │       ├── perceptron_model.h
+│       ├── perceptron_kmod.c
+│       ├── kernel_bridge.py
 │       ├── Makefile
 │       └── README.md
 │
@@ -858,11 +1004,14 @@ Neural-Networks/
 | `python cli.py predict --features ...` | CLI + saved model | Standardizes input and produces a prediction |
 | `python cli.py info` | CLI + model persistence | Displays saved model information |
 | `python cli.py history` | CLI + experiment history | Displays recorded training experiments |
-| `make` | `Makefile` + kernel source | Generates `perceptron_kernel.ko` |
+| `make` | `Makefile` + kernel source | Generates `perceptron_kernel.ko` and `perceptron_kmod.ko` |
 | `sudo insmod perceptron_kernel.ko` | `perceptron_kernel.ko` | Loads the module and executes initialization/inference |
+| `sudo insmod perceptron_kmod.ko` | `perceptron_kmod.ko` | Loads the communication module and registers the character device |
 | `lsmod \| grep perceptron` | Linux module system | Confirms that the module is loaded |
 | `sudo dmesg \| grep perceptron` | `pr_info()` output | Displays kernel-space inference |
-| `sudo rmmod perceptron_kernel` | Linux module system | Removes the module |
+| `python3 kernel_bridge.py` | `kernel_bridge.py` | Sends a vector to the kernel via `ioctl()` and prints the computed result |
+| `sudo rmmod perceptron_kernel` | Linux module system | Removes the inference module |
+| `sudo rmmod perceptron_kmod` | Linux module system | Removes the communication module |
 
 ---
 
@@ -881,6 +1030,7 @@ Neural-Networks/
 | CLI | Separating training, evaluation, prediction, history, and inspection |
 | Kernel modules | Compilation, insertion, kernel logging, and removal |
 | Fixed-point inference | Representing floating-point model values as scaled integers |
+| Kernel communication | Character devices, `ioctl()`, user/kernel data transfer |
 
 ---
 
@@ -905,16 +1055,15 @@ At this stage:
 
 - Training remains in Python
 - Preprocessing remains in user space
-- Kernel weights and bias are hardcoded prototype values
-- The demonstration input is currently defined inside the kernel module
-- Python does not yet send samples directly to the kernel
-- Trained Python parameters are not yet exported automatically
+- Kernel weights and bias in `perceptron_kernel.c` are hardcoded prototype values
+- `perceptron_kmod` computes dot products passed to it, but the perceptron's own weights are not yet passed through automatically
+- Trained Python parameters are not yet exported automatically into either kernel module
 
 ---
 
 # Next Stage
 
-The next stage is connecting the trained Python model to the existing kernel inference implementation.
+The next stage is connecting the trained Python model to the existing kernel inference and communication implementation.
 
 ```text
 Train Python Model
@@ -925,7 +1074,7 @@ Quantize to Fixed-Point
         ↓
 Generate Kernel Model
         ↓
-Pass Standardized Input
+Pass Standardized Input via ioctl()
         ↓
 Kernel Inference
         ↓
@@ -937,7 +1086,7 @@ Planned work includes:
 1. Export the trained perceptron weights and bias.
 2. Convert the learned floating-point parameters to fixed-point integers.
 3. Automatically generate the kernel model representation.
-4. Create a user-space ↔ kernel-space communication interface.
+4. Pass the trained weights through `kernel_bridge.py` instead of using hardcoded prototype values.
 5. Pass standardized Iris samples to the kernel.
 6. Compare Python and kernel predictions.
 7. Measure inference and communication overhead.
@@ -954,7 +1103,7 @@ Planned work includes:
 | CLI | argparse |
 | Systems Programming | C |
 | Operating System | Linux / Ubuntu |
-| Kernel Development | Linux Kernel Modules, Kbuild |
+| Kernel Development | Linux Kernel Modules, Kbuild, character devices, ioctl |
 | Version Control | Git, GitHub |
 
 ---
@@ -989,10 +1138,10 @@ python cli.py history
 # Enter kernel directory
 cd src/kernel
 
-# Compile the module
+# Compile the modules
 make
 
-# Load the module
+# Load the inference module
 sudo insmod perceptron_kernel.ko
 
 # Verify that it is loaded
@@ -1001,7 +1150,17 @@ lsmod | grep perceptron
 # View kernel inference output
 sudo dmesg | grep perceptron
 
-# Unload the module
+# Load the communication module
+sudo insmod perceptron_kmod.ko
+
+# Verify the character device
+ls /dev/perceptron_kmod
+
+# Run a computation from Python
+python3 kernel_bridge.py
+
+# Unload the modules
+sudo rmmod perceptron_kmod
 sudo rmmod perceptron_kernel
 ```
 
@@ -1009,7 +1168,7 @@ sudo rmmod perceptron_kernel
 
 # Status
 
-**Current stage:** Single-layer perceptron with a complete CLI-based training, prediction, and evaluation workflow, extended with a working Linux kernel-space inference prototype.
+**Current stage:** Single-layer perceptron with a complete CLI-based training, prediction, and evaluation workflow, extended with a working Linux kernel-space inference prototype and a functioning user-space ↔ kernel-space communication bridge.
 
 ```text
 Perceptron Fundamentals
@@ -1032,7 +1191,9 @@ Linux Kernel Module
         ↓
 Fixed-Point Kernel Inference
         ↓
-Python ↔ Kernel Integration
+Python ↔ Kernel Communication
+        ↓
+Trained-Model Export
         [IN PROGRESS]
 ```
 
@@ -1042,5 +1203,4 @@ The project began with:
 
 and currently extends that idea toward:
 
-> **How can lightweight ML inference move from a Python workflow toward lower-level operating-system execution?**
-````
+> **How can lightweight ML inference move from a Python workflow toward lower-level operating-system execution, with a working communication path between the two?**
