@@ -1061,39 +1061,6 @@ At this stage:
 
 ---
 
-# Next Stage
-
-The next stage is connecting the trained Python model to the existing kernel inference and communication implementation.
-
-```text
-Train Python Model
-        ↓
-Extract Weights + Bias
-        ↓
-Quantize to Fixed-Point
-        ↓
-Generate Kernel Model
-        ↓
-Pass Standardized Input via ioctl()
-        ↓
-Kernel Inference
-        ↓
-Compare Outputs
-```
-
-Planned work includes:
-
-1. Export the trained perceptron weights and bias.
-2. Convert the learned floating-point parameters to fixed-point integers.
-3. Automatically generate the kernel model representation.
-4. Pass the trained weights through `kernel_bridge.py` instead of using hardcoded prototype values.
-5. Pass standardized Iris samples to the kernel.
-6. Compare Python and kernel predictions.
-7. Measure inference and communication overhead.
-8. Explore eBPF as an alternative kernel execution mechanism.
-
----
-
 # Tech Stack
 
 | Area | Technologies |
