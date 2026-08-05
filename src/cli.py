@@ -7,7 +7,8 @@ import sys
 #   cli.py train / cli.py predict / cli.py eval / cli.py history / cli.py info
 
 
-def cmd_train(args):
+def cmd_train(args): #runs training flow
+    #this is what loads iris data set, creates optimised percetrpon , trains model, displays testing accuracy etc 
     from data_pipeline import build_pipeline
     from optimised_perceptron import OptimisedPerceptron
     from terminal_ui import (
@@ -32,7 +33,7 @@ def cmd_train(args):
         save_model(model, X_train)
     menu(model, X_train, X_test, y_train, y_test, feat_names, class_names, train_acc, test_acc)
 
-
+#loads the saved model and perfroms prediticon , as in predict using four features or interactive mode 
 def cmd_predict(args):
     from predict import get_trained_model, predict_one, show_result, interactive_mode
     print(f"  \033[2mLoading...\033[0m", end="\r", flush=True)
@@ -47,7 +48,7 @@ def cmd_predict(args):
         print("  Provide --features or --interactive\n")
 
 
-def cmd_eval(args):
+def cmd_eval(args): #this is wehre if --verbose is used its called, it calculates confusion matrix, precision, recall 
     from evaluate import (
         _get_predictions, confusion_counts, precision, recall,
         f1_score, accuracy, print_confusion_matrix, print_metrics, print_explanations
