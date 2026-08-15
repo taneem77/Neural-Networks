@@ -8,17 +8,6 @@ class OptimisedPerceptron:
         self.bias = 0.0               # Bias term adjusts the decision boundary threshold
         self.errors_per_epoch = []    # Keeps track of updates made across each epoch iteration
 
-        # NEW : stores training behaviour for convergence graphs
-        self.history = {
-            "errors": [],
-            "accuracy": []
-        }
-
-        # NEW : retain best performing model during training
-        self.best_weights = None
-        self.best_bias = 0.0
-        self.best_accuracy = -1
-
     def fit(self, X, y):
         """ Trains the perceptron weights using optimization routines. """
         n_features = X.shape[1]
@@ -26,64 +15,36 @@ class OptimisedPerceptron:
         self.bias = 0.0
         self.errors_per_epoch = []
 
-        self.history = {
-            "errors": [],
-            "accuracy": []
-        }
-
-        self.best_accuracy = -1
-
         for epoch in range(self.epochs):
             errors = 0
-
+            
             # Loop through each individual input observation and its true target label
             for xi, yi in zip(X, y):
                 # Calculate the weight correction update score
                 update = self.lr * (yi - self.predict_single(xi))
-
+                
                 # If prediction doesn't match target, execute backprop weight corrections
                 if update != 0.0:
                     self.weights += update * xi # Update input direction array
-                    self.bias += update
+                    self.bias += update        
                     errors += 1                 # Record the mistake count
-
+                    
+           
             self.errors_per_epoch.append(errors)
-
-            # NEW : calculate epoch accuracy
-            preds = self.predict(X)
-            acc = np.mean(preds == y)
-
-            self.history["errors"].append(errors)
-            self.history["accuracy"].append(acc)
-
-            # NEW : save best weights instead of blindly keeping final epoch
-            if acc > self.best_accuracy:
-                self.best_accuracy = acc
-                self.best_weights = self.weights.copy()
-                self.best_bias = self.bias
-
+            
+          
             # If errors reach absolute zero, weights are optimal. Stop early!
             if errors == 0:
                 break
 
-        # Restore best performing model
-        if self.best_weights is not None:
-            self.weights = self.best_weights
-            self.bias = self.best_bias
-
     def predict_single(self, xi):
         # Linear dot-product combination: z = w · x + b
         activation = np.dot(xi, self.weights) + self.bias
-
         # Step Activation Function returns 1 for positive boundaries, else 0
         return 1 if activation >= 0.0 else 0
 
     def predict(self, X):
         return np.array([self.predict_single(xi) for xi in X])
-
-    def decision_function(self, X):
-        # NEW : returns raw activation value z = wx+b
-        return np.dot(X, self.weights) + self.bias
 
     def accuracy(self, X, y):
         preds = self.predict(X)
