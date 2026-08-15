@@ -63,20 +63,6 @@ Neural-Networks/
 ```
 
 ---
-
-# Development Journey
-
-| Stage | Objective |
-|--------|-----------|
-| Day 1 | Build the Perceptron mathematically |
-| Day 2 | Optimize learning & convergence |
-| Day 3 | Iris dataset + preprocessing |
-| Day 4 | CLI, persistence & evaluation |
-| Day 5 | Linux Kernel inference prototype |
-| Extension | Multi-dataset benchmarking |
-
----
-
 # CLI Interface
 
 The project is controlled entirely through a modular command-line interface.
