@@ -1,36 +1,41 @@
 # Neural Networks from Scratch
 
-> A modular implementation of a **Single-Layer Perceptron** built during my Machine Learning internship, progressing from mathematical foundations to Linux kernel-space inference and multi-dataset benchmarking.
+<div align="center">
+
+A modular implementation of a **Single-Layer Perceptron** built during my Machine Learning Internship, progressing from mathematical foundations to Linux kernel-space inference and comprehensive benchmarking.
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue?style=for-the-badge&logo=python)
 ![NumPy](https://img.shields.io/badge/NumPy-Linear%20Algebra-orange?style=for-the-badge&logo=numpy)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-Benchmark-F7931E?style=for-the-badge&logo=scikitlearn)
 ![Linux](https://img.shields.io/badge/Linux-Kernel-green?style=for-the-badge&logo=linux)
 
+</div>
+
 ---
 
 ## Project Overview
 
-This project implements a **Perceptron classifier entirely from scratch** using NumPy and gradually extends it into a complete experimentation framework.
+This project implements a **Perceptron classifier entirely from scratch** using **NumPy**, gradually evolving into a complete experimentation framework with benchmarking, visualization, experiment tracking and a Linux kernel-space inference prototype.
 
-Rather than relying on machine learning libraries for training, the project focuses on understanding the learning algorithm mathematically before comparing it against Scikit-Learn's implementation.
+Instead of relying on machine learning libraries for training, every weight update, prediction, convergence check and evaluation metric is implemented manually to understand the mathematics behind linear classifiers.
 
 ### Features
 
-- Custom Perceptron implemented from scratch
-- Learning rate optimization & early stopping
+- Single-Layer Perceptron implemented from scratch
+- Learning rate optimization
+- Early stopping & convergence tracking
 - Interactive CLI dashboard
 - Model persistence (`.npz`)
 - Experiment logging
 - Linux kernel-space inference prototype
 - Multi-dataset benchmarking
 - Confusion matrices & performance metrics
-- Convergence visualization
 - Decision boundary visualization
+- Scikit-Learn comparison
 
 ---
 
-## Repository Structure
+# Repository Structure
 
 ```text
 Neural-Networks/
@@ -48,7 +53,8 @@ Neural-Networks/
 │   ├── datasets.py
 │   ├── metrics.py
 │   ├── visualizer.py
-│   └── benchmark.py
+│   ├── benchmark.py
+│   └── outputs/
 │
 ├── kernel/
 │   ├── kernel_bridge.py
@@ -57,13 +63,6 @@ Neural-Networks/
 │   ├── perceptron_kmod.h
 │   └── perceptron_model.h
 │
-├── outputs/
-│   ├── benchmark/
-│   ├── confusion/
-│   ├── convergence/
-│   ├── boundaries/
-│   └── report.csv
-│
 ├── logs/
 ├── requirements.txt
 └── README.md
@@ -71,7 +70,7 @@ Neural-Networks/
 
 ---
 
-## Learning Pipeline
+# Learning Pipeline
 
 ```text
 Dataset
@@ -89,22 +88,21 @@ Weight Updates
 Evaluation Metrics
    │
    ▼
-Visualization & Benchmarking
+Visual Analytics
 ```
 
 ---
 
-<<<<<<< HEAD
-# Tech Stack
-=======
-## Datasets Evaluated
+# Multi-Dataset Benchmark
 
-| Dataset | Type | Linear Separability |
-|----------|------|--------------------|
-| AND | Logical Gate | Yes |
-| OR | Logical Gate | Yes |
-| NAND | Logical Gate | Yes |
-| XOR | Logical Gate | No |
+The project evaluates the custom perceptron on both logical gate datasets and real-world classification datasets.
+
+| Dataset | Type | Linear? |
+|----------|------|----------|
+| AND | Logic Gate | Yes |
+| OR | Logic Gate | Yes |
+| NAND | Logic Gate | Yes |
+| XOR | Logic Gate | No |
 | Iris | Botanical | Yes |
 | Breast Cancer | Medical | Mostly |
 | Wine | Chemical | Mostly |
@@ -112,130 +110,163 @@ Visualization & Benchmarking
 
 ---
 
-# Benchmark Results
+# Experimental Results
 
-The custom implementation was evaluated against Scikit-Learn's Perceptron.
-
-| Dataset | Custom Accuracy | Scikit-Learn |
-|----------|----------------|--------------|
+| Dataset | Custom Perceptron | Scikit-Learn |
+|----------|------------------|--------------|
 | AND | 100% | — |
 | OR | 100% | — |
 | NAND | 100% | — |
 | XOR | 50% | — |
 | Iris | 100% | 100% |
-| Breast Cancer | 97.4% | 95.6% |
-| Wine | 88.5% | 96.2% |
-| Digits | 100% | 98.6% |
+| Breast Cancer | 97% | ~98% |
+| Wine | 94% | ~97% |
+| Digits | 100% | 100% |
 
 ---
 
-## Accuracy Comparison
+# Accuracy Benchmark
 
-![Accuracy Comparison](outputs/benchmark/accuracy_comparison.png)
+The benchmark below compares the performance of the custom implementation across all datasets.
 
-The benchmark demonstrates that the custom Perceptron achieves performance comparable to Scikit-Learn on linearly separable datasets while correctly exposing its limitations on more challenging data.
+![Accuracy Benchmark](src/outputs/benchmark/accuracy_comparison.png)
 
 ---
 
-## Scikit-Learn Comparison
+# Scikit-Learn Comparison
 
-![Sklearn Comparison](outputs/benchmark/sklearn_vs_custom.png)
+Performance comparison between the custom implementation and Scikit-Learn's Perceptron.
+
+![Scikit Comparison](src/outputs/benchmark/sklearn_vs_custom.png)
 
 ---
 
 # Convergence Analysis
 
-The model records the number of misclassifications after every epoch, allowing visualization of learning behaviour.
+The number of misclassifications is recorded after every epoch to visualize how quickly the model converges.
 
-### Iris Dataset
+## Iris Dataset
 
-![Iris Convergence](outputs/convergence/Iris.png)
+![Iris Convergence](src/outputs/convergence/Iris.png)
 
-### Breast Cancer Dataset
+## Breast Cancer Dataset
 
-![Breast Cancer Convergence](outputs/convergence/Breast_Cancer.png)
+![Breast Cancer Convergence](src/outputs/convergence/Breast_Cancer.png)
+
+## Wine Dataset
+
+![Wine Convergence](src/outputs/convergence/Wine.png)
 
 ---
 
 # Confusion Matrices
 
+These matrices illustrate exactly where the classifier succeeds and where it makes mistakes.
+
 ### Iris
 
-![Iris Confusion Matrix](outputs/confusion/Iris.png)
+![Iris CM](src/outputs/confusion/Iris.png)
 
 ### Breast Cancer
 
-![Breast Cancer Confusion Matrix](outputs/confusion/Breast_Cancer.png)
+![Breast Cancer CM](src/outputs/confusion/Breast_Cancer.png)
 
 ### Wine
 
-![Wine Confusion Matrix](outputs/confusion/Wine.png)
+![Wine CM](src/outputs/confusion/Wine.png)
+
+### Digits
+
+![Digits CM](src/outputs/confusion/Digits.png)
 
 ---
 
 # Decision Boundary Visualizations
 
-The following datasets contain two-dimensional feature spaces, making them ideal for visualizing the learned separating hyperplane.
+For two-dimensional datasets, the learned separating hyperplane can be visualized directly.
 
 ### AND Gate
 
-![AND Boundary](outputs/boundaries/AND.png)
+![AND Boundary](src/outputs/boundaries/AND.png)
 
 ### OR Gate
 
-![OR Boundary](outputs/boundaries/OR.png)
+![OR Boundary](src/outputs/boundaries/OR.png)
 
 ### NAND Gate
 
-![NAND Boundary](outputs/boundaries/NAND.png)
+![NAND Boundary](src/outputs/boundaries/NAND.png)
 
 ### XOR
 
-![XOR Boundary](outputs/boundaries/XOR.png)
-
-The XOR visualization illustrates the fundamental limitation of a **single-layer perceptron**: the classes are **not linearly separable**, so no linear decision boundary can perfectly classify every sample.
+![XOR Boundary](src/outputs/boundaries/XOR.png)
 
 ---
 
-# Linux Kernel Prototype
+# Why XOR Fails
 
-Beyond the Python implementation, the project includes a Linux kernel-space prototype demonstrating how learned perceptron weights can be used for inference through a character device and `ioctl` communication.
+A **single-layer perceptron** can only learn **linearly separable** datasets.
 
-**Architecture**
+The XOR dataset is not linearly separable, meaning no straight decision boundary can perfectly classify every sample. This limitation motivates the development of **Multilayer Perceptrons (MLPs)** and deeper neural networks.
+
+---
+
+# Linux Kernel Inference Prototype
+
+Beyond the Python implementation, this project includes a Linux kernel-space prototype demonstrating how learned perceptron weights can be used for inference through a character device and `ioctl` communication.
+
+## Architecture
 
 ```text
-Python Training
-       │
-       ▼
- Learned Weights
-       │
-       ▼
- Fixed-Point Conversion
-       │
-       ▼
-Kernel Character Device
-       │
-       ▼
-Kernel Dot Product
-       │
-       ▼
-Prediction
+                 USER SPACE
+
+        Python Perceptron (NumPy)
+                 │
+                 ▼
+        Learned Weights & Bias
+                 │
+                 ▼
+      Fixed-Point Conversion
+                 │
+                 ▼
+          kernel_bridge.py
+                 │
+            ioctl() Call
+                 │
+────────────────────────────────────────
+
+                KERNEL SPACE
+
+      Character Device Driver
+        (/dev/perceptron_kmod)
+                 │
+                 ▼
+      Fixed-Point Dot Product
+                 │
+                 ▼
+         Activation z = wx + b
+                 │
+                 ▼
+             Binary Prediction
 ```
 
-This prototype showcases communication between user space and kernel space while performing the weighted summation inside the Linux kernel.
+## Kernel Components
+
+| File | Purpose |
+|------|---------|
+| `kernel_bridge.py` | Communication layer between Python and the Linux kernel |
+| `perceptron_kmod.c` | Character device driver implementing `ioctl` |
+| `perceptron_kernel.c` | Kernel-space perceptron inference |
+| `perceptron_kmod.h` | Shared user/kernel communication interface |
+| `perceptron_model.h` | Fixed-point weights and bias representation |
+
+The kernel module computes the weighted summation using **Q16.16 fixed-point arithmetic**, demonstrating a lightweight inference path outside traditional user-space execution.
 
 ---
 
-# Running the Project
->>>>>>> 60f5210 (updated)
+# Command Line Interface
 
-## Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-## Train the model
+## Train
 
 ```bash
 cd src
@@ -248,39 +279,61 @@ python cli.py train
 python cli.py eval
 ```
 
-## Interactive prediction
+## Interactive Prediction
 
 ```bash
 python cli.py predict --interactive
 ```
 
-## Run full benchmark
+## Experiment History
+
+```bash
+python cli.py history
+```
+
+## Multi-Dataset Benchmark
 
 ```bash
 python cli.py benchmark
 ```
 
-This automatically generates:
+Running the benchmark automatically generates:
 
-- Confusion matrices
-- Convergence plots
-- Decision boundaries
-- Accuracy benchmark
+- Accuracy benchmark plots
 - Scikit-Learn comparison
-- `outputs/report.csv`
+- Convergence curves
+- Confusion matrices
+- Decision boundaries
+- `report.csv`
+
+---
+
+# Technologies Used
+
+| Category | Tools |
+|----------|------|
+| Language | Python, C |
+| ML | NumPy, Scikit-Learn |
+| Visualization | Matplotlib |
+| CLI | argparse |
+| Persistence | NumPy `.npz` |
+| Kernel | Linux Character Device, ioctl |
+| Logging | Python logging |
 
 ---
 
 # Future Improvements
 
-- Multi-layer Perceptron implementation
-- Gradient descent with differentiable activations
-- CUDA/GPU acceleration
-- Additional real-world datasets
-- Model export to embedded systems
+- Multilayer Perceptron implementation
+- Sigmoid & ReLU activation functions
+- Gradient Descent & Backpropagation
+- GPU acceleration
+- Additional medical and financial datasets
+- Embedded deployment using exported kernel parameters
 
 ---
 
+# Author
 
 **Tanisha Mathur**
 
