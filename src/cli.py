@@ -31,7 +31,12 @@ def cmd_train(args):
         class_names
     )
 
-    print_model_config(args.lr, args.epochs)
+    print_model_config(
+        args.lr,
+        args.epochs,
+        args.decay,
+        args.patience
+    )
 
     model = OptimisedPerceptron(
         lr=args.lr,
@@ -64,7 +69,6 @@ def cmd_train(args):
     )
 
 
-
 def cmd_predict(args):
     from predict import (
         get_trained_model,
@@ -88,7 +92,6 @@ def cmd_predict(args):
 
     else:
         print("  Provide --features or --interactive\n")
-
 
 
 def cmd_eval(args):
@@ -120,7 +123,6 @@ def cmd_eval(args):
         print_explanations()
 
 
-
 def cmd_history(args):
     from logger import show_history, train_and_log
 
@@ -128,7 +130,6 @@ def cmd_history(args):
         train_and_log(args.lr, args.epochs)
     else:
         show_history()
-
 
 
 def cmd_info(args):
@@ -148,7 +149,6 @@ def cmd_info(args):
 def cmd_benchmark(args):
     from benchmark import run_benchmark
     run_benchmark()
-
 
 
 def main():
@@ -181,61 +181,105 @@ examples:
     # ---------------- TRAIN ----------------
 
     p_train = sub.add_parser("train")
-    p_train.add_argument("--lr", type=float, default=0.1)
-    p_train.add_argument("--epochs", type=int, default=100)
-    p_train.add_argument("--save", action="store_true")
+
+    p_train.add_argument(
+        "--lr",
+        type=float,
+        default=0.1,
+        help="Learning rate"
+    )
+
+    p_train.add_argument(
+        "--epochs",
+        type=int,
+        default=100,
+        help="Maximum training epochs"
+    )
+
+    # NEW : kept for UI + future ConvergentPerceptron support
+    p_train.add_argument(
+        "--decay",
+        type=float,
+        default=0.99,
+        help="Learning rate decay factor"
+    )
+
+    p_train.add_argument(
+        "--patience",
+        type=int,
+        default=3,
+        help="Early stopping patience"
+    )
+
+    p_train.add_argument(
+        "--save",
+        action="store_true",
+        help="Save trained model to disk"
+    )
+
     p_train.set_defaults(func=cmd_train)
 
     # ---------------- PREDICT ----------------
 
     p_predict = sub.add_parser("predict")
+
     p_predict.add_argument(
         "--features",
         nargs=4,
         type=float,
         metavar=("SL", "SW", "PL", "PW")
     )
+
     p_predict.add_argument(
         "--interactive",
         action="store_true"
     )
+
     p_predict.set_defaults(func=cmd_predict)
 
     # ---------------- EVALUATE ----------------
 
     p_eval = sub.add_parser("eval")
+
     p_eval.add_argument(
         "--verbose",
         action="store_true"
     )
+
     p_eval.set_defaults(func=cmd_eval)
 
     # ---------------- HISTORY ----------------
 
     p_history = sub.add_parser("history")
+
     p_history.add_argument(
         "--log",
         action="store_true"
     )
+
     p_history.add_argument(
         "--lr",
         type=float,
         default=0.1
     )
+
     p_history.add_argument(
         "--epochs",
         type=int,
         default=100
     )
+
     p_history.set_defaults(func=cmd_history)
 
     # ---------------- INFO ----------------
 
     p_info = sub.add_parser("info")
+
     p_info.add_argument(
         "--path",
         default="saved_model.npz"
     )
+
     p_info.set_defaults(func=cmd_info)
 
     # ---------------- BENCHMARK ----------------
@@ -244,6 +288,7 @@ examples:
         "benchmark",
         help="Run multi-dataset benchmarking"
     )
+
     p_benchmark.set_defaults(func=cmd_benchmark)
 
     # ---------------- DISPATCH ----------------

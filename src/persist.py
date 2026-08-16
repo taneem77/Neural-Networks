@@ -7,6 +7,7 @@ import time
 from sklearn.preprocessing import StandardScaler # feature normalization
 from data_pipeline import build_pipeline #get the files
 from optimised_perceptron import OptimisedPerceptron
+from export_kernel import export_to_kernel   # NEW
 
 MODEL_PATH = "saved_model.npz" #basically whatever training was done is saved into this file
 
@@ -42,6 +43,9 @@ def save_model(model, X_train, path=MODEL_PATH):
         errors_per_epoch = np.array(model.errors_per_epoch),
     )
 
+    # NEW : automatically create the kernel header from learned weights
+    export_to_kernel(path, "kernel/exported_weights.h")
+
     G = "\033[92m"; C = "\033[96m"; D = "\033[2m"; X = "\033[0m" #coloured output with ansi terminal codes
     print(f"\n  {G}  Saved{X}")
     print(f"  Path   ->  {C}{os.path.abspath(path)}{X}")
@@ -49,7 +53,7 @@ def save_model(model, X_train, path=MODEL_PATH):
     print(f"  Format ->  .npz  {D}(NumPy compressed archive — stores multiple arrays in one file){X}\n")
 
 
-def load_model(path=MODEL_PATH): #loads an exisiting model so it checks if there is a file already saved w training 
+def load_model(path=MODEL_PATH): #loads an exisiting model so it checks if there is a file already saved w training
     R = "\033[91m"; G = "\033[92m"; C = "\033[96m"; D = "\033[2m"; X = "\033[0m"
 
     if not os.path.exists(path):

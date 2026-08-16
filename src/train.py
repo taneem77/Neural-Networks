@@ -5,6 +5,8 @@
 import numpy as np #Mathematicla operations
 import importlib #importing other perceptron algos dynamically
 import data_pipeline #importing that file
+from persist import save_model
+
 
 # Dynamic imports to load older configurations safely
 day1_2 = importlib.import_module("perceptron_core")
@@ -124,5 +126,8 @@ def compare_all(X_train, X_test, y_train, y_test):
     print(f"  {'─'*14}  {'─'*10}  {'─'*12}")
     for name, r in results.items():
         print(f"  {name:<14}  {r['test_acc']:>9.1f}%  {r['epochs']:>12}")
+
+    # save the best convergent model so prediction + kernel use identical weights
+    save_model(conv, X_train)
 
     return conv
